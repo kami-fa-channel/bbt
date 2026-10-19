@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""bbt (book binding tool): avvio senza installare niente.
+"""bbt (books binding tool): avvio senza installare niente.
 
     python bbt.py                       apre la finestra
     python bbt.py copertina -H 210 -L 145 -D 48

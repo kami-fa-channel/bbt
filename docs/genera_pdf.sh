@@ -7,7 +7,7 @@
 #   docs/genera_pdf.sh                  # scrive docs/manuale.pdf
 #   docs/genera_pdf.sh /tmp/output.pdf  # scrive dove indicato
 #
-# Dipendenze (nessuna e' fra quelle di legatoria: servono solo per questo script):
+# Dipendenze (nessuna e' fra quelle di bbt: servono solo per questo script):
 #   - pandoc
 #   - una distribuzione LaTeX con il motore xelatex, e i pacchetti lmodern e
 #     fontspec (di norma inclusi in una installazione "recommended")

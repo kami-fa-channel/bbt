@@ -49,7 +49,7 @@ jobs:
       - name: Installazione del pacchetto (pip install .)
         run: |
           .venv/bin/python -m pip install .
-          .venv/bin/legatoria --version
+          .venv/bin/bbt --version
 
   altri-sistemi:
     name: ${{ matrix.nome }} (sperimentale)

@@ -1,6 +1,6 @@
-# Legatoria — dal PDF al libro cucito
+# bbt — dal PDF al libro cucito
 
-**Legatoria** prepara un PDF per farne un libro cucito a mano, in brossura o in copertina rigida: impone le pagine in fascicoli per la stampa fronte/retro, calcola le misure dei pezzi della copertina e compone i tasselli per il piatto e il dorso. È una finestra con tre schede, che seguono l'ordine del lavoro; imposizione e copertina si usano anche da riga di comando, per gli script o per una macchina senza schermo.
+**bbt** (*books binding tool*) prepara un PDF per farne un libro cucito a mano, in brossura o in copertina rigida: impone le pagine in fascicoli per la stampa fronte/retro, calcola le misure dei pezzi della copertina e compone i tasselli per il piatto e il dorso. È una finestra con tre schede, che seguono l'ordine del lavoro; imposizione e copertina si usano anche da riga di comando, per gli script o per una macchina senza schermo.
 
 ![La scheda Imposizione: anteprima del foglio imposto, riepilogo e tabella delle tranche di stampa](docs/img/finestra-imposizione.png)
 
@@ -23,10 +23,10 @@ Poi, dalla cartella del progetto (quella scompattata dallo zip, oppure clonata c
 python3 -m venv .venv              # crea un ambiente virtuale
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install ".[anteprima]"         # installa il programma e le librerie
-legatoria                          # apre la finestra
+bbt                          # apre la finestra
 ```
 
-L'ambiente virtuale non è un capriccio: le distribuzioni recenti (Arch/Manjaro, Debian 12, Ubuntu 23.04 e successive, Fedora) rifiutano `pip install` fuori da un ambiente virtuale, con l'errore `externally-managed-environment`. Le volte dopo basta attivare l'ambiente (`source .venv/bin/activate`) e lanciare `legatoria`; oppure lanciare direttamente `.venv/bin/legatoria`, senza attivare niente.
+L'ambiente virtuale non è un capriccio: le distribuzioni recenti (Arch/Manjaro, Debian 12, Ubuntu 23.04 e successive, Fedora) rifiutano `pip install` fuori da un ambiente virtuale, con l'errore `externally-managed-environment`. Le volte dopo basta attivare l'ambiente (`source .venv/bin/activate`) e lanciare `bbt`; oppure lanciare direttamente `.venv/bin/bbt`, senza attivare niente.
 
 `".[anteprima]"` installa anche `pypdfium2` e `pillow`, che servono a mostrare nell'anteprima il contenuto delle pagine e non solo la loro posizione (se manca `pypdfium2` ma c'è `pdftoppm` di poppler-utils, come quasi sempre su Linux, il contenuto si vede lo stesso, con `pillow`); con `pip install .` si installano solo le librerie indispensabili (`pypdf`, `reportlab`, `fonttools`). Senza installare il pacchetto: `pip install -r requirements.txt` (sempre nell'ambiente virtuale) e poi `python -m legatoria` dalla cartella del progetto.
 
@@ -39,7 +39,7 @@ python bbt.py                      # apre la finestra (equivale a: python -m leg
 python bbt.py copertina -H 210 -L 145 -D 48
 ```
 
-(`bbt` sta per *book binding tool*.) Su Arch/Manjaro le librerie si installano una volta per tutte con il gestore di pacchetti, senza pip e senza ambiente virtuale:
+Su Arch/Manjaro le librerie si installano una volta per tutte con il gestore di pacchetti, senza pip e senza ambiente virtuale:
 
 ```bash
 sudo pacman -S tk python-pypdf python-reportlab python-fonttools python-pillow
@@ -198,24 +198,24 @@ Pulsanti: *Anteprima PDF* genera un PDF temporaneo e lo apre nel visualizzatore 
 ## Riga di comando
 
 ```bash
-legatoria                          # apre la finestra
-legatoria imposizione -i libro.pdf ...
-legatoria copertina ...
-legatoria imposizione -h           # ogni sottocomando ha il suo aiuto
+bbt                          # apre la finestra
+bbt imposizione -i libro.pdf ...
+bbt copertina ...
+bbt imposizione -h           # ogni sottocomando ha il suo aiuto
 ```
 
-Se non hai installato il pacchetto, scrivi `python -m legatoria` al posto di `legatoria`.
+Se non hai installato il pacchetto, scrivi `python bbt.py` (oppure `python -m legatoria`) al posto di `bbt`.
 
 ### Sottocomando `imposizione`
 
 ```bash
-legatoria imposizione -i <file.pdf> [-f <fogli_per_fascicolo>] [Opzioni]
+bbt imposizione -i <file.pdf> [-f <fogli_per_fascicolo>] [Opzioni]
 ```
 
 **Primo passo: chiedi un parere al programma.**
 
 ```bash
-legatoria imposizione -i mio_libro.pdf -w 80 -n
+bbt imposizione -i mio_libro.pdf -w 80 -n
 ```
 
 `-n` non genera nulla. Legge il PDF, stima lo spessore della carta e stampa una tabella con tutte le fascicolature possibili, il numero di fascicoli che ne deriva, le pagine bianche sprecate, lo scorrimento previsto e lo spessore del dorso di ogni fascicolo, indicando quale valore conviene e quanto lavoro comporta. Nella finestra la stessa tabella compare in fondo al riepilogo, e si aggiorna a ogni modifica dei parametri.
@@ -223,7 +223,7 @@ legatoria imposizione -i mio_libro.pdf -w 80 -n
 **Secondo passo: genera il file.**
 
 ```bash
-legatoria imposizione -i mio_libro.pdf -f 4 -p 4 --segni
+bbt imposizione -i mio_libro.pdf -f 4 -p 4 --segni
 ```
 
 **Terzo passo: stampa solo il menabò.**
@@ -285,9 +285,9 @@ Prima di stampare 380 fogli, apri il file generato e controlla la **prima faccia
 ### Sottocomando `copertina`
 
 ```bash
-legatoria copertina                                            # interattivo
-legatoria copertina -H 210 -L 145 -D 48                        # cassa rigida
-legatoria copertina -H 210 -L 148 -D 12 --legatura brossura
+bbt copertina                                            # interattivo
+bbt copertina -H 210 -L 145 -D 48                        # cassa rigida
+bbt copertina -H 210 -L 148 -D 12 --legatura brossura
 ```
 
 Opzioni: `-u` unghia, `-c` spessore del cartone, `-g` gola, `--indorsato`, `--dorso-incollato`, `--cerniera`, `--rimbocco`. Unghia, cartone e gola, se non li specifichi, vengono scelti in base allo spessore del dorso, come nella tabella qui sopra.
@@ -296,7 +296,7 @@ Oltre alla lista di taglio stampa anche le **fasce del rivestimento** misurate d
 
 ## Per chi vuole modificare il codice
 
-La cartella del progetto (qui la chiamiamo `bbt/`, ma il nome non conta) e il pacchetto Python che contiene (`legatoria`) sono due cose diverse:
+Il programma e il comando si chiamano `bbt`. La cartella del progetto (qui la chiamiamo `bbt/`, ma il nome non conta) e il pacchetto Python che contiene (`legatoria`, il nome è rimasto quello originale) sono due cose diverse:
 
 ```
 bbt/                      la cartella del progetto

@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "legatoria"
+name = "bbt"
 dynamic = ["version"]
 description = "Dal PDF al libro cucito: imposizione a fascicoli, misure della copertina, tasselli per il dorso."
 readme = "README.md"
@@ -24,7 +24,7 @@ cornice = ["PyQt5", "pillow", "numpy"]
 test = ["pytest"]
 
 [project.scripts]
-legatoria = "legatoria.cli:main"
+bbt = "legatoria.cli:main"
 
 [tool.setuptools]
 packages = ["legatoria", "legatoria.gui"]

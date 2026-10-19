@@ -58,3 +58,39 @@ def test_una_pagina_che_non_si_rende_non_blocca(pdf_numerato):
         assert not m.in_attesa() and m.chiedi(99, 100) is None
     finally:
         m.chiudi()
+
+
+def test_due_miniature_non_usano_pdfium_insieme(pdf_numerato, monkeypatch):
+    """Aprire un altro PDF mentre il thread del precedente sta ancora rendendo:
+    pdfium non e' thread-safe, quindi i rendering di istanze diverse non devono
+    sovrapporsi (su GitHub, con Python 3.9, il processo andava in crash)."""
+    pytest.importorskip("pypdfium2")
+    import threading
+    dentro, massimo, blocco = [0], [0], threading.Lock()
+    vero = miniature.Miniature._rendi_pdfium
+
+    def lento(documento, indice, lato):
+        with blocco:
+            dentro[0] += 1
+            massimo[0] = max(massimo[0], dentro[0])
+        try:
+            time.sleep(0.05)
+            return vero(documento, indice, lato)
+        finally:
+            with blocco:
+                dentro[0] -= 1
+
+    monkeypatch.setattr(miniature.Miniature, "_rendi_pdfium", staticmethod(lento))
+    pdf = pdf_numerato(4)
+    a, b = miniature.Miniature(pdf, "pdfium"), miniature.Miniature(pdf, "pdfium")
+    try:
+        for i in range(4):
+            a.chiedi(i, 200)
+            b.chiedi(i, 200)
+        aspetta(a)
+        aspetta(b)
+        assert a.chiedi(3, 200) is not None and b.chiedi(3, 200) is not None
+        assert massimo[0] == 1
+    finally:
+        a.chiudi()
+        b.chiudi()

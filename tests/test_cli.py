@@ -12,7 +12,7 @@ def legatoria(*args, stdin=None):
 
 def test_versione():
     r = legatoria("--version")
-    assert r.returncode == 0 and r.stdout.startswith("legatoria ")
+    assert r.returncode == 0 and r.stdout.startswith("bbt ")
 
 
 def test_analisi_senza_generare_nulla(pdf_bianco, tmp_path):
@@ -98,7 +98,7 @@ def test_lancio_classico_con_bbt_py():
                         "-u", "3", "-c", "3", "-g", "5"], cwd=RADICE, capture_output=True, text=True)
     assert r.returncode == 0 and "246 x 382" in r.stdout
     r = subprocess.run([sys.executable, "bbt.py", "--version"], cwd=RADICE, capture_output=True, text=True)
-    assert r.stdout.startswith("legatoria ")
+    assert r.stdout.startswith("bbt ")
 
 
 def test_nessun_file_chiamato_come_il_pacchetto_accanto_al_pacchetto():

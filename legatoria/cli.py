@@ -241,7 +241,7 @@ def avvia_gui():
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
     ap = argparse.ArgumentParser(
-        prog="legatoria",
+        prog="bbt",
         description="Dal PDF al libro cucito. Senza argomenti apre la finestra.")
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = ap.add_subparsers(dest="comando", metavar="comando")

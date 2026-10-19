@@ -2,7 +2,7 @@
 
 Questo manuale copre tutta la catena che porta da un PDF qualsiasi a un libro rilegato in casa, in brossura o in copertina rigida: imposizione delle pagine, stampa fronte/retro a blocchi, piegatura, guardie, foratura, cucitura e copertina. È la parte manuale, che è quella dove si sbaglia di più.
 
-Fa parte del progetto **Legatoria** ([README](../README.md)), il programma che si occupa della parte informatica: imposizione, misure della copertina e tasselli. Il manuale si legge anche da solo, senza il programma. Le opzioni come `-f`, `-g`, `-p` o `--shingling`, che compaiono nei capitoli, sono quelle di `legatoria imposizione`; nella finestra sono i campi *Fogli per fascicolo*, *Fogli di guardia*, *Bianche di correzione*, *Shingling* (la tabella di corrispondenza è nel [README](../README.md#imposizione)).
+Fa parte del progetto **bbt** (*books binding tool*) ([README](../README.md)), il programma che si occupa della parte informatica: imposizione, misure della copertina e tasselli. Il manuale si legge anche da solo, senza il programma. Le opzioni come `-f`, `-g`, `-p` o `--shingling`, che compaiono nei capitoli, sono quelle di `legatoria imposizione`; nella finestra sono i campi *Fogli per fascicolo*, *Fogli di guardia*, *Bianche di correzione*, *Shingling* (la tabella di corrispondenza è nel [README](../README.md#imposizione)).
 
 **Indice**
 
@@ -684,7 +684,7 @@ dove:
 * dorso: `216 × 56` mm
 * rivestimento: l'insieme disteso misura `216 × (143 + 5 + 56 + 5 + 143) = 216 × 352`, quindi taglia **246 × 382** mm
 
-Per ottenere esattamente questi numeri dal programma imposta unghia, cartone e gola a mano (campi della scheda Copertina, oppure `legatoria copertina -H 210 -L 145 -D 48 -u 3 -c 3 -g 5`). Lasciandoli vuoti, per un dorso di 48 mm il programma sceglie unghia 3,5 mm e gola 4,5 mm, e i pezzi vengono `217 × 144`, `217 × 56` e **247 × 383** mm: un millimetro di differenza, che conta solo se hai già tagliato il cartone.
+Per ottenere esattamente questi numeri dal programma imposta unghia, cartone e gola a mano (campi della scheda Copertina, oppure `bbt copertina -H 210 -L 145 -D 48 -u 3 -c 3 -g 5`). Lasciandoli vuoti, per un dorso di 48 mm il programma sceglie unghia 3,5 mm e gola 4,5 mm, e i pezzi vengono `217 × 144`, `217 × 56` e **247 × 383** mm: un millimetro di differenza, che conta solo se hai già tagliato il cartone.
 
 **Stimare le misure prima di cucire.** La scheda Imposizione può ricavare le tre misure dal PDF (*Porta le misure alla copertina*): `H` è il lato corto del foglio di stampa, `L` è metà del lato lungo meno il rifilo previsto (3 mm salvo diversa indicazione), `D` è lo spessore stimato della carta più il filo, che il programma conta a 0,3–0,5 mm per fascicolo (capitolo 13): la scheda Copertina parte dal valore di mezzo e nell'avviso ti dice fra quali estremi può cadere. Se hai misurato il tuo filo con la prova della penna, indicalo nel campo *Filo per fascicolo* della scheda Imposizione: il dorso viene calcolato con quello. Sono stime per ordinare i materiali, non misure: il dorso in particolare dipende da quanto tiri il filo e da come batti il blocco. **Prima di tagliare il cartone sostituisci sempre le tre misure con quelle vere del blocco finito.**
 

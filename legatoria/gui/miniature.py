@@ -38,6 +38,13 @@ def motore():
     return None
 
 
+# pdfium non e' thread-safe, nemmeno fra documenti diversi: due thread che lo usano
+# insieme possono mandare in crash l'intero processo ("Fatal Python error: Aborted").
+# Succede quando si apre un altro PDF mentre il thread del precedente sta ancora
+# rendendo una pagina (chiudi() non aspetta che finisca), quindi il blocco e' uno
+# solo per tutte le istanze di Miniature.
+_PDFIUM = threading.Lock()
+
 # Le pagine si rendono a lati "a gradini": ridimensionare un'immagine gia' pronta
 # costa poco, rifarla a ogni pixel di differenza (trascinando il divisore, per
 # esempio) costerebbe molto.
@@ -122,9 +129,10 @@ class Miniature:
             indice, lato = chiave
             try:
                 if self.motore == "pdfium":
-                    if documento is None:         # pdfium si usa da un thread solo
-                        documento = pdfium.PdfDocument(self.percorso)
-                    immagine = self._rendi_pdfium(documento, indice, lato)
+                    with _PDFIUM:                 # vedi _PDFIUM
+                        if documento is None:
+                            documento = pdfium.PdfDocument(self.percorso)
+                        immagine = self._rendi_pdfium(documento, indice, lato)
                 else:
                     immagine = self._rendi_pdftoppm(indice, lato)
             except Exception:
@@ -137,7 +145,8 @@ class Miniature:
                 self.contatore += 1
                 self._al_lavoro = False
         if documento is not None:
-            documento.close()
+            with _PDFIUM:
+                documento.close()
 
     @staticmethod
     def _rendi_pdfium(documento, indice, lato):

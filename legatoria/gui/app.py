@@ -19,7 +19,7 @@ except ImportError as e:
 class App:
     def __init__(self, root):
         self.root = root
-        root.title("Legatoria")
+        root.title("bbt")
         root.minsize(1020, 680)
         self.note = ttk.Notebook(root)
         self.note.pack(fill="both", expand=True)

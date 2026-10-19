@@ -64,7 +64,7 @@ def test_i_pacchetti_elencati_sono_tutti_e_soli_quelli_che_esistono():
 
 
 def test_il_comando_legatoria_punta_a_una_funzione_che_esiste():
-    modulo, _, funzione = pyproject()["project"]["scripts"]["legatoria"].partition(":")
+    modulo, _, funzione = pyproject()["project"]["scripts"]["bbt"].partition(":")
     assert callable(getattr(importlib.import_module(modulo), funzione))
 
 
