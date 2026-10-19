@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "legatoria"
+dynamic = ["version"]
+description = "Dal PDF al libro cucito: imposizione a fascicoli, misure della copertina, tasselli per il dorso."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+dependencies = [
+    "pypdf>=5.0",
+    "reportlab",
+    "fonttools",
+]
+
+[project.optional-dependencies]
+# contenuto delle pagine nell'anteprima dell'imposizione
+anteprima = ["pypdfium2", "pillow"]
+# solo per estrai_cornice.py (nella cartella del progetto, non e' nel pacchetto)
+cornice = ["PyQt5", "pillow", "numpy"]
+test = ["pytest"]
+
+[project.scripts]
+legatoria = "legatoria.cli:main"
+
+[tool.setuptools]
+packages = ["legatoria", "legatoria.gui"]
+
+[tool.setuptools.dynamic]
+version = { attr = "legatoria.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

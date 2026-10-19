@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+
+# file prodotti dal programma durante le prove
+*_booklet.pdf
+sagoma_copertina.pdf
+docs/manuale.pdf
+
+# residui di xelatex quando un font non si trova (docs/genera_pdf.sh)
+missfont.log
+texput.*
+
+# finto PATH creato da tests/test_pdf_manuale.py
+.pytest_path_finto/
+
+# materiale per il video, non fa parte del programma
+lie-algebras-in-particle-physics-free.pdf
+script_video.md
+
+# libreria personale delle cornici bitmap: i PNG sono tuoi, non si pubblicano
+cornici/*.png

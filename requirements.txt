@@ -1,0 +1,19 @@
+# Le librerie che servono al programma.
+#
+# In un ambiente virtuale (vedi il README, sezione Installazione):
+#     python3 -m venv .venv
+#     source .venv/bin/activate          # Windows: .venv\Scripts\activate
+#     pip install -r requirements.txt
+#     python bbt.py
+#
+# tkinter non e' qui: e' un pacchetto di sistema, vedi il README.
+pypdf>=5.0
+reportlab
+fonttools
+# facoltativi: contenuto delle pagine nell'anteprima dell'imposizione
+pypdfium2
+pillow
+# facoltativo: solo per estrai_cornice.py, che ricava da un SVG i blocchetti PNG della cornice bitmap
+PyQt5
+# facoltativo: solo per estrai_cornice.py, snap al periodo del motivo dei tratti
+numpy
