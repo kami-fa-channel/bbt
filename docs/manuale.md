@@ -2,7 +2,7 @@
 
 Questo manuale copre tutta la catena che porta da un PDF qualsiasi a un libro rilegato in casa, in brossura o in copertina rigida: imposizione delle pagine, stampa fronte/retro a blocchi, piegatura, guardie, foratura, cucitura e copertina. È la parte manuale, che è quella dove si sbaglia di più.
 
-Fa parte del progetto **bbt** (*books binding tool*) ([README](../README.md)), il programma che si occupa della parte informatica: imposizione, misure della copertina e tasselli. Il manuale si legge anche da solo, senza il programma. Le opzioni come `-f`, `-g`, `-p` o `--shingling`, che compaiono nei capitoli, sono quelle di `legatoria imposizione`; nella finestra sono i campi *Fogli per fascicolo*, *Fogli di guardia*, *Bianche di correzione*, *Shingling* (la tabella di corrispondenza è nel [README](../README.md#imposizione)).
+Fa parte del progetto **BBT** (*Books binding tools*) ([README](../README.md)), il programma che si occupa della parte informatica: imposizione, misure della copertina e tasselli. Il manuale si legge anche da solo, senza il programma. Le opzioni come `-f`, `-g`, `-p` o `--shingling`, che compaiono nei capitoli, sono quelle di `legatoria imposizione`; nella finestra sono i campi *Fogli per fascicolo*, *Fogli di guardia*, *Bianche di correzione*, *Shingling* (la tabella di corrispondenza è nel [README](../README.md#imposizione)).
 
 **Indice**
 

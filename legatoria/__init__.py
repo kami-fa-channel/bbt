@@ -1,4 +1,4 @@
-"""bbt (books binding tool): dal PDF al libro cucito.
+"""BBT (Books binding tools): dal PDF al libro cucito.
 
 Il pacchetto si chiama ancora legatoria; il comando e il programma sono bbt.
 """
