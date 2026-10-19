@@ -15,6 +15,13 @@ from conftest import RADICE
 
 SCRIPT = RADICE / "docs" / "genera_pdf.sh"
 
+# lo script controlla pandoc, poi xelatex, e solo dopo manuale e font: i test che
+# vogliono arrivare a quei controlli non hanno senso dove le due dipendenze mancano
+serve_pandoc = pytest.mark.skipif(not shutil.which("pandoc"), reason="serve pandoc")
+servono_pandoc_e_xelatex = pytest.mark.skipif(
+    not (shutil.which("pandoc") and shutil.which("xelatex")),
+    reason="servono pandoc e xelatex perche' lo script arrivi al controllo")
+
 
 def esegui(*args, path=None, fontconfig=None):
     env = dict(os.environ)
@@ -93,12 +100,14 @@ def test_messaggio_chiaro_se_manca_pandoc():
     assert "pandoc" in r.stderr.lower()
 
 
+@serve_pandoc
 def test_messaggio_chiaro_se_manca_xelatex():
     r = esegui(path=path_con_solo("pandoc"))  # pandoc c'e', xelatex no
     assert r.returncode != 0
     assert "xelatex" in r.stderr.lower()
 
 
+@servono_pandoc_e_xelatex
 def test_messaggio_chiaro_se_manca_il_manuale(tmp_path):
     finto = tmp_path / "docs" / "genera_pdf.sh"
     finto.parent.mkdir()
@@ -113,6 +122,7 @@ SERVONO_FONT = not (shutil.which("fc-match") and shutil.which("fc-list") and shu
 
 
 @pytest.mark.skipif(SERVONO_FONT, reason="servono fc-match, fc-list e fc-cache per questi test")
+@servono_pandoc_e_xelatex
 def test_senza_caladea_usa_liberation_serif_e_avvisa(tmp_path):
     """Il caso reale: su un sistema senza il pacchetto del font (per esempio Arch
     senza ttf-caladea) lo script deve accorgersene da solo, avvisare con il nome
@@ -133,6 +143,7 @@ def test_senza_caladea_usa_liberation_serif_e_avvisa(tmp_path):
 
 
 @pytest.mark.skipif(SERVONO_FONT, reason="servono fc-match, fc-list e fc-cache per questi test")
+@servono_pandoc_e_xelatex
 def test_senza_caladea_ne_liberation_serif_errore_chiaro(tmp_path):
     fc = fontconfig_senza(tmp_path, "Caladea", "Liberation Serif")
     r = esegui(str(tmp_path / "manuale.pdf"), fontconfig=fc)
@@ -141,6 +152,7 @@ def test_senza_caladea_ne_liberation_serif_errore_chiaro(tmp_path):
 
 
 @pytest.mark.skipif(SERVONO_FONT, reason="servono fc-match, fc-list e fc-cache per questi test")
+@servono_pandoc_e_xelatex
 def test_senza_dejavu_sans_mono_errore_chiaro(tmp_path):
     fc = fontconfig_senza(tmp_path, "DejaVu Sans Mono")
     r = esegui(str(tmp_path / "manuale.pdf"), fontconfig=fc)
