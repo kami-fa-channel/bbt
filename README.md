@@ -1,6 +1,6 @@
-# Legatoria — dal PDF al libro cucito
+# BBT (Books binding tools) — dal PDF al libro cucito
 
-**Legatoria** prepara un PDF per farne un libro cucito a mano, in brossura o in copertina rigida: impone le pagine in fascicoli per la stampa fronte/retro, calcola le misure dei pezzi della copertina e compone i tasselli per il piatto e il dorso. È una finestra con tre schede, che seguono l'ordine del lavoro; imposizione e copertina si usano anche da riga di comando, per gli script o per una macchina senza schermo.
+**BBT** prepara un PDF per farne un libro cucito a mano, in brossura o in copertina rigida: impone le pagine in fascicoli per la stampa fronte/retro, calcola le misure dei pezzi della copertina e compone i tasselli per il piatto e il dorso. È una finestra con tre schede, che seguono l'ordine del lavoro; imposizione e copertina si usano anche da riga di comando, per gli script o per una macchina senza schermo.
 
 ![La scheda Imposizione: anteprima del foglio imposto, riepilogo e tabella delle tranche di stampa](docs/img/finestra-imposizione.png)
 
