@@ -75,6 +75,26 @@ def parser_imposizione(sub):
     return ap
 
 
+def barra_avanzamento(larghezza=30, uscita=None):
+    """Funzione `avanzamento` che disegna una barra sul terminale, o None se non e' un terminale."""
+    uscita = uscita or sys.stderr
+    if not uscita.isatty():
+        return None
+    ultima = [-1]
+
+    def barra(fatte, totali):
+        percento = 100 * fatte // max(1, totali)
+        if percento == ultima[0]:
+            return
+        ultima[0] = percento
+        pieni = larghezza * fatte // max(1, totali)
+        fine = "\n" if fatte >= totali else ""
+        uscita.write(f"\r[{'#' * pieni}{'-' * (larghezza - pieni)}] {percento:3d}%  "
+                     f"{fatte}/{totali} facciate{fine}")
+        uscita.flush()
+    return barra
+
+
 def esegui_imposizione(ns):
     imp.valida_filo(ns.filo)
     reader = imp.apri_pdf(ns.input)
@@ -142,7 +162,8 @@ def esegui_imposizione(ns):
     percorso = Path(ns.input)
     uscita = Path(ns.output) if ns.output else percorso.with_name(percorso.stem + "_booklet.pdf")
     print("\nImposizione in corso...")
-    n_fasc, n_pagine = imp.impagina(reader, p.blocco, ns, ns.fogli, uscita)
+    n_fasc, n_pagine = imp.impagina(reader, p.blocco, ns, ns.fogli, uscita,
+                                    avanzamento=barra_avanzamento())
     print(f"Fatto: {uscita} ({n_pagine} pagine orizzontali, {n_fasc} fascicoli).")
     print("\n".join(imp.righe_tranche(tr, ns.fogli)))
 

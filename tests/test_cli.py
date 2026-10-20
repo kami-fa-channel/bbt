@@ -105,3 +105,28 @@ def test_nessun_file_chiamato_come_il_pacchetto_accanto_al_pacchetto():
     """Regressione: un legatoria.py accanto alla cartella legatoria/ faceva fallire pip install ."""
     assert (RADICE / "legatoria").is_dir()
     assert not (RADICE / "legatoria.py").exists()
+
+
+def test_la_barra_di_avanzamento_solo_su_un_terminale():
+    import io
+    from legatoria.cli import barra_avanzamento
+
+    class Terminale(io.StringIO):
+        def isatty(self):
+            return True
+
+    assert barra_avanzamento(uscita=io.StringIO()) is None      # reindirizzato: niente barra
+    uscita = Terminale()
+    barra = barra_avanzamento(larghezza=10, uscita=uscita)
+    for fatte in range(1, 5):
+        barra(fatte, 4)
+        barra(fatte, 4)                                         # stessa percentuale: non riscrive
+    testo = uscita.getvalue()
+    assert testo.count("\r") == 4
+    assert "[##########] 100%  4/4 facciate\n" in testo
+    assert [int(p) for p in __import__("re").findall(r"(\d+)%", testo)] == [25, 50, 75, 100]
+
+
+def test_la_generazione_da_riga_di_comando_non_scrive_la_barra_se_reindirizzata(pdf_bianco, tmp_path):
+    r = legatoria("imposizione", "-i", pdf_bianco(32), "-f", 4, "-o", tmp_path / "x.pdf")
+    assert r.returncode == 0 and "\r" not in r.stderr and "facciate" not in r.stderr

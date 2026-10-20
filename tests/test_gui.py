@@ -65,6 +65,15 @@ def test_riepilogo_con_tranche_e_tabella(app, pdf_bianco, monkeypatch):
     assert "blocchi da circa 100 pagine" in imp.testo.get("1.0", "end")
 
 
+def attendi_generazione(app, imp, secondi=30):
+    """La generazione gira in un thread: si lascia lavorare la finestra finche' ha finito."""
+    fine = time.time() + secondi
+    while imp._lavoro and time.time() < fine:
+        app.root.update()
+        time.sleep(0.01)
+    assert not imp._lavoro, "la generazione non e' finita"
+
+
 def test_genera_scrive_il_file(app, pdf_bianco, tmp_path, monkeypatch):
     uscita = tmp_path / "libro.pdf"
     monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(64)))
@@ -72,7 +81,38 @@ def test_genera_scrive_il_file(app, pdf_bianco, tmp_path, monkeypatch):
     imp = app.scheda_imposizione
     imp.apri()
     imp.genera()
+    attendi_generazione(app, imp)
     assert uscita.is_file() and imp.stato.cget("text").startswith("Fatto:")
+    assert not imp.barra.winfo_ismapped()                  # a lavoro finito la barra sparisce
+    assert "disabled" not in imp.pulsante_genera.state()
+
+
+def test_la_barra_segue_l_imposizione(app, pdf_bianco, tmp_path, monkeypatch):
+    from legatoria import imposizione
+    visti, errori = [], []
+    originale = imposizione.impagina
+
+    def impagina_lenta(reader, blocco, args, fogli, percorso, avanzamento=None):
+        def spia(fatte, totale):                 # gira nel thread di lavoro: niente tkinter qui
+            visti.append((fatte, totale))
+            avanzamento(fatte, totale)
+            time.sleep(0.002)
+        return originale(reader, blocco, args, fogli, percorso, spia)
+
+    monkeypatch.setattr(imposizione, "impagina", impagina_lenta)
+    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: errori.append(a))
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(64)))
+    monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **k: str(tmp_path / "l.pdf"))
+    imp = app.scheda_imposizione
+    imp.apri()
+    imp.genera()
+    assert imp.barra.winfo_manager() == "pack"             # visibile subito
+    assert "disabled" in imp.pulsante_genera.state()       # e niente doppia generazione
+    imp.genera()                                           # ignorato: non parte un secondo lavoro
+    attendi_generazione(app, imp)
+    assert not errori
+    assert visti and visti[-1] == (32, 32)                 # 64 pagine = 32 facciate
+    assert [v[0] for v in visti] == list(range(1, 33))
 
 
 def test_margini_impossibili_non_chiudono_il_programma(app, pdf_bianco, tmp_path, monkeypatch):
@@ -86,6 +126,7 @@ def test_margini_impossibili_non_chiudono_il_programma(app, pdf_bianco, tmp_path
     imp.v_dorso.set("100")
     imp.v_est.set("100")
     imp.genera()
+    attendi_generazione(app, imp)
     assert errori and "margini" in errori[0][1]
 
 

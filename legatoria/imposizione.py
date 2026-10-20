@@ -359,7 +359,7 @@ def aggiungi_segni(writer, pagina, larghezza, altezza, etichetta, y_marca):
     pagina.replace_contents(stream)
 
 
-def imponi(reader, writer, blocco, args, signature, fogli):
+def imponi(reader, writer, blocco, args, signature, fogli, avanzamento=None):
     larghezza_mm, altezza_mm = FORMATI[args.carta]
     # foglio di stampa in orizzontale: il lato lungo diventa la larghezza
     W, H = altezza_mm * MM, larghezza_mm * MM
@@ -378,6 +378,7 @@ def imponi(reader, writer, blocco, args, signature, fogli):
     passo = args.shingling * MM
     facciate = ordine_fascicolo(signature)
     n_fascicoli = len(blocco) // signature
+    totale = n_fascicoli * len(facciate)
 
     # Scaletta delle marche di collazione: ogni fascicolo porta la sua marca un
     # gradino piu' in basso, cosi' impilando i fascicoli si vede subito se ne
@@ -418,6 +419,9 @@ def imponi(reader, writer, blocco, args, signature, fogli):
                 else:
                     x = meta + m_dorso - spinta   # il dorso e' a sinistra della cella
                 piazza(pagina, sorgente, x, m_piede, cella_w, cella_h, args.scala)
+
+            if avanzamento:
+                avanzamento(len(writer.pages), totale)
 
     return n_fascicoli, len(writer.pages)
 
@@ -595,13 +599,17 @@ def salva(writer, percorso):
         writer.write(fh)
 
 
-def impagina(reader, blocco, args, fogli, percorso):
+def impagina(reader, blocco, args, fogli, percorso, avanzamento=None):
     """Impone il blocco e scrive il file.  Restituisce (n_fascicoli, n_pagine).
+
+    `avanzamento(fatte, totali)`, se c'e', e' chiamata a ogni facciata imposta;
+    quando fatte == totali resta il salvataggio, che e' rapido.  Puo' essere
+    chiamata da un thread diverso da quello che l'ha passata.
 
     Attenzione: imponendo, pypdf consuma le rotazioni delle pagine di reader.
     Per imporre due volte lo stesso PDF va riaperto.
     """
     writer = PdfWriter()
-    n_fasc, n_pag = imponi(reader, writer, blocco, args, fogli * 4, fogli)
+    n_fasc, n_pag = imponi(reader, writer, blocco, args, fogli * 4, fogli, avanzamento)
     salva(writer, percorso)
     return n_fasc, n_pag

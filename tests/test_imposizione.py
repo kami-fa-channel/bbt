@@ -299,3 +299,23 @@ def test_le_copie_dell_immagine_hanno_gli_stessi_dati(tmp_path):
     xobj = out.pages[0]["/Resources"]["/XObject"]
     dati = {xobj[n].get_object().get_data() for n, _ in immagini_usate(out.pages[0])}
     assert len(dati) == 1
+
+
+# ------------------------------------------------------------ avanzamento
+
+def test_l_avanzamento_conta_le_facciate(pdf_bianco, tmp_path):
+    reader = imp.apri_pdf(pdf_bianco(32))
+    piano = imp.piano(32, [], 0, 4, 80)
+    chiamate = []
+    imp.impagina(reader, piano.blocco, argomenti(), 4, tmp_path / "out.pdf",
+                 avanzamento=lambda fatte, totale: chiamate.append((fatte, totale)))
+    assert chiamate == [(i, 16) for i in range(1, 17)]
+
+
+def test_senza_avanzamento_il_risultato_e_lo_stesso(pdf_numerato, tmp_path):
+    piano = imp.piano(32, [], 0, 4, 80)
+    for nome, kw in (("a.pdf", {}), ("b.pdf", {"avanzamento": lambda *_: None})):
+        imp.impagina(imp.apri_pdf(pdf_numerato(32)), piano.blocco, argomenti(), 4,
+                     tmp_path / nome, **kw)
+    a, b = (PdfReader(str(tmp_path / n)) for n in ("a.pdf", "b.pdf"))
+    assert [numeri_sul_foglio(a, i) for i in range(16)] == [numeri_sul_foglio(b, i) for i in range(16)]

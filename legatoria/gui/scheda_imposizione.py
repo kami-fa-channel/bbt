@@ -1,6 +1,7 @@
 """Scheda Imposizione: dal PDF ai fascicoli da stampare."""
 
 import os
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from types import SimpleNamespace
@@ -38,6 +39,7 @@ class SchedaImposizione(ttk.Frame):
         self.cache_foto = {}        # (indice, larghezza, altezza) -> PhotoImage
         self.immagini = []          # le PhotoImage sul canvas: tkinter non le tiene vive
         self._attesa = None
+        self._lavoro = None         # la generazione in corso: fatte, totale, errore, fine
         self._pronte_viste = -1
 
         sinistra = ttk.Frame(self)
@@ -141,7 +143,9 @@ class SchedaImposizione(ttk.Frame):
         ttk.Separator(p).pack(fill="x", pady=8)
         ttk.Button(p, text="Shingling dalla grammatura",
                    command=self.shingling_auto).pack(fill="x", pady=2)
-        ttk.Button(p, text="Genera il PDF...", command=self.genera).pack(fill="x", pady=2)
+        self.pulsante_genera = ttk.Button(p, text="Genera il PDF...", command=self.genera)
+        self.pulsante_genera.pack(fill="x", pady=2)
+        self.barra = ttk.Progressbar(p, mode="determinate", maximum=1)   # visibile solo mentre lavora
 
         ttk.Separator(p).pack(fill="x", pady=8)
         self.v_rifilo = campo(p, "Rifilo previsto (mm)", "3", lambda: None)
@@ -527,6 +531,8 @@ class SchedaImposizione(ttk.Frame):
 
     # ------------------------------------------------------------ azioni
     def genera(self):
+        if self._lavoro:
+            return
         if not self.reader:
             messagebox.showinfo("Nessun file", "Apri prima un PDF.")
             return
@@ -536,17 +542,56 @@ class SchedaImposizione(ttk.Frame):
                                                 filetypes=[("PDF", "*.pdf")])
         if not percorso:
             return
-        self.stato.config(text="Imposizione in corso...")
-        self.update_idletasks()
         try:
-            imp.impagina(self.reader, self.blocco, self.args(), self.fogli, percorso)
+            args = self.args()
         except Exception as e:
-            self.stato.config(text="")
             messagebox.showerror("Errore", str(e))
             return
-        self.stato.config(text=f"Fatto: {os.path.basename(percorso)} "
-                               f"({self.n_fascicoli * self.fogli * 2} pagine)")
-        self.reader = imp.apri_pdf(self.pdf)   # le rotazioni sono state consumate
+        # copie: mentre il thread lavora si puo' aprire un altro PDF
+        reader, blocco, fogli, pdf = self.reader, self.blocco, self.fogli, self.pdf
+        lavoro = self._lavoro = {"fatte": 0, "totale": 1, "errore": None, "fine": False,
+                                 "pdf": pdf, "pagine": self.n_fascicoli * fogli * 2}
+
+        def avanzamento(fatte, totale):
+            lavoro["fatte"], lavoro["totale"] = fatte, totale
+
+        def lavora():
+            try:
+                imp.impagina(reader, blocco, args, fogli, percorso, avanzamento)
+            except Exception as e:
+                lavoro["errore"] = e
+            finally:
+                lavoro["fine"] = True
+
+        self.stato.config(text="Imposizione in corso...")
+        self.pulsante_genera.state(["disabled"])
+        self.barra.config(value=0, maximum=1)
+        self.barra.pack(fill="x", pady=2, after=self.pulsante_genera)
+        threading.Thread(target=lavora, daemon=True).start()
+        self.after(ATTESA_MS, self._controlla_lavoro, percorso)
+
+    def _controlla_lavoro(self, percorso):
+        """Aggiorna la barra; a lavoro finito mostra l'esito (gira nel thread della finestra)."""
+        lavoro = self._lavoro
+        fatte, totale = lavoro["fatte"], max(1, lavoro["totale"])
+        self.barra.config(maximum=totale, value=fatte)
+        if not lavoro["fine"]:
+            if fatte >= totale:
+                self.stato.config(text="Salvataggio...")
+            else:
+                self.stato.config(text=f"Imposizione in corso: facciata {fatte} di {totale}")
+            self.after(ATTESA_MS, self._controlla_lavoro, percorso)
+            return
+        self._lavoro = None
+        self.barra.pack_forget()
+        self.pulsante_genera.state(["!disabled"])
+        if lavoro["errore"]:
+            self.stato.config(text="")
+            messagebox.showerror("Errore", str(lavoro["errore"]))
+            return
+        self.stato.config(text=f"Fatto: {os.path.basename(percorso)} ({lavoro['pagine']} pagine)")
+        if self.pdf == lavoro["pdf"]:
+            self.reader = imp.apri_pdf(self.pdf)   # le rotazioni sono state consumate
 
     def passa_misure(self):
         if not self.blocco:
