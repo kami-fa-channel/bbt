@@ -225,3 +225,77 @@ def test_pdf_mancante_e_pdf_protetto(tmp_path, pdf_bianco):
         w.write(fh)
     with pytest.raises(ErroreLegatoria, match="password"):
         imp.apri_pdf(protetto)
+
+
+# ------------------------------------------------ immagini disegnate piu' volte
+
+def pdf_con_logo(tmp_path, n_pagine, due_volte):
+    """PDF A5 con lo stesso logo su ogni pagina; con `due_volte` ogni pagina lo disegna due volte.
+
+    Costruito a mano: reportlab incapsula le immagini in un oggetto Form, mentre
+    nel PDF che ha dato origine al problema l'immagine e' disegnata direttamente.
+    """
+    from pypdf import PdfWriter
+    from pypdf.generic import (DecodedStreamObject, DictionaryObject, NameObject,
+                               NumberObject)
+
+    w = PdfWriter()
+    logo = DecodedStreamObject()
+    logo.set_data(bytes([200, 30, 30]) * 40 * 40)
+    logo.update({NameObject("/Type"): NameObject("/XObject"),
+                 NameObject("/Subtype"): NameObject("/Image"),
+                 NameObject("/Width"): NumberObject(40), NameObject("/Height"): NumberObject(40),
+                 NameObject("/ColorSpace"): NameObject("/DeviceRGB"),
+                 NameObject("/BitsPerComponent"): NumberObject(8)})
+    logo = w._add_object(logo)
+    disegni = "q 40 0 0 40 50 50 cm /Im0 Do Q\n"
+    if due_volte:
+        disegni += "q 40 0 0 40 50 150 cm /Im0 Do Q\n"
+    for _ in range(n_pagine):
+        pagina = w.add_blank_page(width=148 * 72 / 25.4, height=210 * 72 / 25.4)
+        pagina[NameObject("/Resources")] = DictionaryObject({
+            NameObject("/XObject"): DictionaryObject({NameObject("/Im0"): logo})})
+        contenuto = DecodedStreamObject()
+        contenuto.set_data(disegni.encode())
+        pagina[NameObject("/Contents")] = w._add_object(contenuto)
+    percorso = tmp_path / "logo.pdf"
+    with open(percorso, "wb") as fh:
+        w.write(fh)
+    return percorso
+
+
+def immagini_usate(pagina):
+    """Per ogni disegno di un'immagine nella pagina: (nome, numero dell'oggetto)."""
+    xobj = pagina["/Resources"]["/XObject"]
+    usi = []
+    for operandi, operatore in pagina.get_contents().operations:
+        if operatore == b"Do" and xobj[operandi[0]].get_object()["/Subtype"] == "/Image":
+            usi.append((operandi[0], xobj.raw_get(operandi[0]).idnum))
+    return usi
+
+
+@pytest.mark.parametrize("due_volte", [True, False], ids=["stessa_pagina", "metà_foglio"])
+def test_un_oggetto_immagine_non_e_disegnato_due_volte_nella_stessa_facciata(tmp_path, due_volte):
+    """Cairo, cioe' Evince, scrive una chiave ripetuta nelle risorse della pagina
+    che disegna due volte lo stesso oggetto, e certe stampanti la lasciano vuota."""
+    reader = imp.apri_pdf(pdf_con_logo(tmp_path, 8, due_volte))
+    piano = imp.piano(8, [], 0, 2, 80)
+    uscita = tmp_path / "out.pdf"
+    imp.impagina(reader, piano.blocco, argomenti(), 2, uscita)
+    out = PdfReader(str(uscita))
+    for i, pagina in enumerate(out.pages):
+        usi = immagini_usate(pagina)
+        assert len(usi) == (4 if due_volte else 2), f"facciata {i + 1}"
+        assert len({nome for nome, _ in usi}) == len(usi), f"facciata {i + 1}"
+        assert len({idnum for _, idnum in usi}) == len(usi), f"facciata {i + 1}"
+
+
+def test_le_copie_dell_immagine_hanno_gli_stessi_dati(tmp_path):
+    reader = imp.apri_pdf(pdf_con_logo(tmp_path, 4, True))
+    piano = imp.piano(4, [], 0, 1, 80)
+    uscita = tmp_path / "out.pdf"
+    imp.impagina(reader, piano.blocco, argomenti(), 1, uscita)
+    out = PdfReader(str(uscita))
+    xobj = out.pages[0]["/Resources"]["/XObject"]
+    dati = {xobj[n].get_object().get_data() for n, _ in immagini_usate(out.pages[0])}
+    assert len(dati) == 1

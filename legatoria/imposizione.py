@@ -14,12 +14,13 @@ Funzioni principali:
 """
 
 import math
+import re
 import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
 from pypdf import PdfReader, PdfWriter, PageObject, Transformation
-from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+from pypdf.generic import DecodedStreamObject, DictionaryObject, IndirectObject, NameObject
 
 from .errori import ErroreLegatoria
 
@@ -485,8 +486,94 @@ def apri_pdf(percorso):
     return reader
 
 
+_RE_DO = re.compile(rb"(/[^\s/<>\[\]()]+)\s+Do\b")
+
+
+def _byte_contenuto(pagina):
+    """Contenuto della pagina come byte, senza analizzarlo."""
+    def appiattisci(oggetto):
+        oggetto = oggetto.get_object()
+        if isinstance(oggetto, list):
+            return b"\n".join(appiattisci(x) for x in oggetto)
+        return oggetto.get_data()
+
+    flussi = pagina.get("/Contents")
+    return b"" if flussi is None else appiattisci(flussi)
+
+
+def separa_immagini_ripetute(writer):
+    """Dà una copia propria a ogni immagine che una pagina disegna piu' volte.
+
+    Quando una pagina disegna due volte lo stesso oggetto immagine, con lo stesso
+    nome o con nomi diversi, Cairo (cioe' Evince, quando stampa) scrive nel PDF
+    che manda alla stampante un dizionario delle risorse con la stessa chiave
+    ripetuta, ad esempio ``/XObject << /x65 65 0 R /x65 65 0 R >>``.  Poppler lo
+    perdona, ma l'interprete PDF di certe stampanti (visto su un Lexmark MS415dn)
+    non legge le risorse e stampa la pagina vuota.  Con oggetti distinti il PDF di
+    Cairo e' valido.  Va chiamata dopo compress_identical_objects, che altrimenti
+    riunirebbe le copie.  Restituisce quante copie ha creato.
+    """
+    create = 0
+    for pagina in writer.pages:
+        risorse = pagina.get("/Resources")
+        xobj = risorse.get("/XObject") if risorse else None
+        if not xobj:
+            continue
+        # prima un conteggio rapido sui byte: l'analisi completa del contenuto
+        # costa piu' di tutto il resto del salvataggio
+        usi = {}
+        for nome in _RE_DO.findall(_byte_contenuto(pagina)):
+            nome = NameObject(nome.decode("latin-1"))
+            if nome in xobj:
+                oggetto = xobj.raw_get(nome)
+                chiave = oggetto.idnum if isinstance(oggetto, IndirectObject) else id(oggetto)
+                usi[chiave] = usi.get(chiave, 0) + 1
+        if all(k < 2 for k in usi.values()):
+            continue
+        contenuto = pagina.get_contents()
+        # le risorse possono essere condivise con altre pagine: si lavora su copie
+        xobj = DictionaryObject(xobj)
+        risorse = DictionaryObject(risorse)
+        risorse[NameObject("/XObject")] = xobj
+        pagina[NameObject("/Resources")] = risorse
+        viste = set()
+        cambiato = False
+        for operandi, operatore in contenuto.operations:
+            if operatore != b"Do" or not operandi or operandi[0] not in xobj:
+                continue
+            nome = operandi[0]
+            oggetto = xobj.raw_get(nome)
+            chiave = oggetto.idnum if isinstance(oggetto, IndirectObject) else id(oggetto)
+            originale = oggetto.get_object()
+            if originale.get("/Subtype") != "/Image":
+                continue
+            if chiave not in viste:
+                viste.add(chiave)
+                continue
+            copia = type(originale)()
+            copia._data = originale._data
+            copia.update(originale)
+            n = len(xobj)
+            nuovo = NameObject(f"/ImR{n}")
+            while nuovo in xobj:
+                n += 1
+                nuovo = NameObject(f"/ImR{n}")
+            xobj[nuovo] = writer._add_object(copia)
+            operandi[0] = nuovo
+            create += 1
+            cambiato = True
+        if cambiato:
+            # un flusso nuovo: compress_identical_objects puo' aver fuso in uno
+            # solo i contenuti uguali di piu' pagine, e modificarlo sul posto
+            # cambierebbe anche quelle che non hanno le risorse nuove
+            flusso = DecodedStreamObject()
+            flusso.set_data(contenuto.get_data())
+            pagina[NameObject("/Contents")] = writer._add_object(flusso)
+    return create
+
+
 def salva(writer, percorso):
-    """Comprime e scrive il PDF.
+    """Comprime, rende il PDF stampabile da Evince e lo scrive.
 
     Prima si comprimono i flussi, poi si fondono gli oggetti uguali: nell'ordine
     inverso pypdf lascia in /Contents di qualche pagina un riferimento a un
@@ -500,6 +587,10 @@ def salva(writer, percorso):
         writer.compress_identical_objects()
     except Exception as e:  # pragma: no cover - dipende dalla versione di pypdf
         warnings.warn(f"compressione del PDF non riuscita: {e}")
+    try:
+        separa_immagini_ripetute(writer)
+    except Exception as e:  # pragma: no cover - dipende dalla versione di pypdf
+        warnings.warn(f"separazione delle immagini ripetute non riuscita: {e}")
     with open(percorso, "wb") as fh:
         writer.write(fh)
 

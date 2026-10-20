@@ -237,6 +237,8 @@ Configurazione del modulo di stampa (CUPS o altro):
 3. **Nessun adattamento alla pagina**: scala 100%, "dimensioni reali", niente "adatta all'area stampabile". Altrimenti i margini calcolati dal programma saltano e il margine di cucitura si mangia il testo.
 4. **Menabò di prova**: stampa **solo il primo fascicolo**, cioè le prime `2 × F` pagine del file finale (8 pagine con `-f 4`, 10 con `-f 5`, 6 con `-f 3`). Piegalo e sfoglialo a mano. Se i numeri scorrono senza salti e i capitoli iniziano a destra, l'imposizione è giusta.
 
+**Una facciata esce vuota o viene saltata.** Il PDF si vede bene a schermo ma la stampante lascia in bianco una facciata, e da lì in poi i fogli slittano. Il caso noto riguarda Evince, che rigenera il PDF con Cairo a ogni stampa: se una pagina disegna due volte la stessa immagine (un logo, un fregio), Cairo scrive nel PDF una chiave ripetuta, e l'interprete PDF di certe stampanti (visto su un Lexmark MS415dn) non legge più la pagina. Il programma evita il caso dando a ogni disegno la sua copia dell'immagine, quindi con un booklet generato da questa versione non dovrebbe succedere. Se capita con un PDF che hai imposto altrove, o con un'altra causa, prova a stampare da un altro visualizzatore (Firefox, Okular) o a esportare il PDF in immagini; per distinguere le cause stampa il primo fascicolo prima di lanciare il libro intero.
+
 Se il margine interno risulta stretto una volta piegato, aumenta *Margine al dorso* nella finestra (`--margine-dorso` da riga di comando). Ricordati che qualche millimetro se lo mangia anche il rifilo finale.
 
 ---
