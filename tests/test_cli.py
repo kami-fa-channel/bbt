@@ -29,6 +29,17 @@ def test_generazione_del_file(pdf_bianco, tmp_path):
     assert r.returncode == 0 and "Fatto:" in r.stdout and uscita.is_file()
 
 
+def test_un_pdf_per_tranche(pdf_bianco, tmp_path):
+    from pypdf import PdfReader
+    uscita = tmp_path / "libro.pdf"
+    r = legatoria("imposizione", "-i", pdf_bianco(64), "-f", 2, "-t", 16, "--per-tranche",
+                  "-o", uscita)
+    assert r.returncode == 0
+    parti = sorted(tmp_path.glob("libro_tranche*.pdf"))
+    assert [p.name for p in parti] == [f"libro_tranche0{i}.pdf" for i in (1, 2)]
+    assert sum(len(PdfReader(str(p)).pages) for p in parti) == len(PdfReader(str(uscita)).pages)
+
+
 def test_errori_chiari_e_codice_di_uscita(pdf_bianco):
     pdf = pdf_bianco(10)
     for args, messaggio in (

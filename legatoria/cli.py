@@ -48,6 +48,8 @@ def parser_imposizione(sub):
                          "(ripetibile, oppure elenco separato da virgole)")
     ap.add_argument("-t", "--tranche", type=int, default=50,
                     help="pagine indicative per ogni tranche di stampa")
+    ap.add_argument("--per-tranche", action="store_true",
+                    help="scrive anche un PDF per ogni tranche (<output>_tranche01.pdf, ...)")
     ap.add_argument("-o", "--output", help="file PDF di output")
     ap.add_argument("-n", "--analisi", action="store_true",
                     help="solo analisi, non genera nulla")
@@ -165,6 +167,9 @@ def esegui_imposizione(ns):
     n_fasc, n_pagine = imp.impagina(reader, p.blocco, ns, ns.fogli, uscita,
                                     avanzamento=barra_avanzamento())
     print(f"Fatto: {uscita} ({n_pagine} pagine orizzontali, {n_fasc} fascicoli).")
+    if ns.per_tranche:
+        for f in imp.esporta_tranche(uscita, tr["elenco"]):
+            print(f"  {f}")
     print("\n".join(imp.righe_tranche(tr, ns.fogli)))
 
 

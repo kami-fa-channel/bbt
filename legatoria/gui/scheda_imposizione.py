@@ -156,6 +156,9 @@ class SchedaImposizione(ttk.Frame):
         ttk.Separator(p).pack(fill="x", pady=8)
         ttk.Button(p, text="Shingling dalla grammatura",
                    command=self.shingling_auto).pack(fill="x", pady=2)
+        self.v_per_tranche = tk.BooleanVar(value=False)
+        ttk.Checkbutton(p, text="Un PDF per ogni tranche",
+                        variable=self.v_per_tranche).pack(anchor="w")
         self.pulsante_genera = ttk.Button(p, text="Genera il PDF...", command=self.genera)
         self.pulsante_genera.pack(fill="x", pady=2)
         self.barra = ttk.Progressbar(p, mode="determinate", maximum=1)   # visibile solo mentre lavora
@@ -718,6 +721,8 @@ class SchedaImposizione(ttk.Frame):
             return
         # copie: mentre il thread lavora si puo' aprire un altro PDF
         reader, blocco, fogli, pdf = self.reader, self.blocco, self.fogli, self.pdf
+        elenco = (imp.tranche(max(1, intero(self.v_tranche, 50)), fogli,
+                              self.n_fascicoli)["elenco"] if self.v_per_tranche.get() else None)
         lavoro = self._lavoro = {"fatte": 0, "totale": 1, "errore": None, "fine": False,
                                  "pdf": pdf, "pagine": self.n_fascicoli * fogli * 2}
 
@@ -727,6 +732,8 @@ class SchedaImposizione(ttk.Frame):
         def lavora():
             try:
                 imp.impagina(reader, blocco, args, fogli, percorso, avanzamento)
+                if elenco:
+                    lavoro["tranche"] = len(imp.esporta_tranche(percorso, elenco))
             except Exception as e:
                 lavoro["errore"] = e
             finally:
@@ -758,7 +765,10 @@ class SchedaImposizione(ttk.Frame):
             self.stato.config(text="")
             messagebox.showerror("Errore", str(lavoro["errore"]))
             return
-        self.stato.config(text=f"Fatto: {os.path.basename(percorso)} ({lavoro['pagine']} pagine)")
+        esito = f"Fatto: {os.path.basename(percorso)} ({lavoro['pagine']} pagine)"
+        if lavoro.get("tranche"):
+            esito += f" e {lavoro['tranche']} file di tranche"
+        self.stato.config(text=esito)
         if self.pdf == lavoro["pdf"]:
             self.reader = imp.apri_pdf(self.pdf)   # le rotazioni sono state consumate
 

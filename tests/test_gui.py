@@ -87,6 +87,23 @@ def test_genera_scrive_il_file(app, pdf_bianco, tmp_path, monkeypatch):
     assert "disabled" not in imp.pulsante_genera.state()
 
 
+def test_genera_un_pdf_per_tranche_se_richiesto(app, pdf_bianco, tmp_path, monkeypatch):
+    uscita = tmp_path / "libro.pdf"
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(64)))
+    monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **k: str(uscita))
+    imp = app.scheda_imposizione
+    imp.apri()
+    imp.v_tranche.set("16")
+    imp.genera()
+    attendi_generazione(app, imp)
+    assert not list(tmp_path.glob("libro_tranche*.pdf"))          # facoltativo: spento di default
+    imp.v_per_tranche.set(True)
+    imp.genera()
+    attendi_generazione(app, imp)
+    assert len(list(tmp_path.glob("libro_tranche*.pdf"))) > 1
+    assert "file di tranche" in imp.stato.cget("text")
+
+
 def test_la_barra_segue_l_imposizione(app, pdf_bianco, tmp_path, monkeypatch):
     from legatoria import imposizione
     visti, errori = [], []

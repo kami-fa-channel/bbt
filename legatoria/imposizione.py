@@ -613,3 +613,22 @@ def impagina(reader, blocco, args, fogli, percorso, avanzamento=None):
     n_fasc, n_pag = imponi(reader, writer, blocco, args, fogli * 4, fogli, avanzamento)
     salva(writer, percorso)
     return n_fasc, n_pag
+
+
+def esporta_tranche(percorso, elenco):
+    """Spezza il PDF imposto in un file per tranche, accanto all'originale.
+
+    `elenco` e' la voce "elenco" di tranche().  I file si chiamano
+    <nome>_tranche01.pdf, <nome>_tranche02.pdf, ...; restituisce i loro percorsi."""
+    percorso = Path(percorso)
+    cifre = max(2, len(str(len(elenco))))
+    scritti = []
+    for x in elenco:
+        reader = PdfReader(str(percorso))
+        writer = PdfWriter()
+        for i in range(x["inizio"] - 1, x["fine"]):
+            writer.add_page(reader.pages[i])
+        uscita = percorso.with_name(f"{percorso.stem}_tranche{x['n']:0{cifre}d}.pdf")
+        salva(writer, uscita)
+        scritti.append(uscita)
+    return scritti
