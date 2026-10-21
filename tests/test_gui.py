@@ -130,6 +130,20 @@ def test_margini_impossibili_non_chiudono_il_programma(app, pdf_bianco, tmp_path
     assert errori and "margini" in errori[0][1]
 
 
+def test_ripristina_impaginazione(app, pdf_bianco, monkeypatch):
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(16)))
+    imp = app.scheda_imposizione
+    imp.apri()
+    imp.v_dorso.set("30")
+    imp.v_scala.set("0.8")
+    imp.v_shing.set("0.2")
+    imp.v_segni.set(False)
+    imp.ripristina_impaginazione()
+    assert (imp.v_dorso.get(), imp.v_est.get(), imp.v_testa.get(), imp.v_piede.get()) == ("15", "10", "10", "10")
+    assert imp.v_scala.get() == "1.0" and imp.v_shing.get() == "0"
+    assert imp.v_segni.get() is True
+
+
 def test_le_misure_passano_alla_copertina(app, pdf_bianco, monkeypatch):
     monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(200)))
     app.scheda_imposizione.apri()
@@ -1212,3 +1226,21 @@ def test_la_scelta_della_cornice_bitmap_parte_dalla_libreria_cornici(app, tmp_pa
     _tasselli(app)._file_bitmap()
     assert viste["initialdir"] == str(lib)
     assert tasselli.CARTELLA_CORNICI.endswith("cornici")
+
+
+def test_menabo_sfoglia_per_aperture(app, pdf_numerato, monkeypatch):
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_numerato(40)))
+    imp = app.scheda_imposizione
+    imp.apri()
+    imp.v_vista.set("menabo")
+    imp.disegna()
+    assert imp.apertura == 0 and imp.pagine_apertura(0) == (None, 0)
+    imp.scorri(1)
+    assert imp.pagine_apertura(imp.apertura) == (1, 2)
+    for _ in range(40):
+        imp.scorri(1)
+    assert imp.apertura == imp.n_aperture() - 1
+    assert imp.n_fasc.get() == imp.n_fascicoli
+    imp.n_fasc.set(2)
+    imp.disegna()
+    assert imp.fascicolo_apertura(imp.apertura) == 1

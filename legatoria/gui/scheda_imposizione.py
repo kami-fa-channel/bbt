@@ -22,6 +22,10 @@ RENDERING = motore() is not None and ImageTk is not None
 # ogni quanto si guarda se il thread delle miniature ha finito qualche pagina
 ATTESA_MS = 60
 
+# valori di partenza dell'impaginazione (mm, tranne la scala)
+IMPAGINAZIONE = {"dorso": "15", "est": "10", "testa": "10", "piede": "10",
+                 "scala": "1.0", "shing": "0"}
+
 
 class SchedaImposizione(ttk.Frame):
     def __init__(self, parent, app):
@@ -41,6 +45,7 @@ class SchedaImposizione(ttk.Frame):
         self._attesa = None
         self._lavoro = None         # la generazione in corso: fatte, totale, errore, fine
         self._pronte_viste = -1
+        self.apertura = 0           # nel menabo': l'apertura (doppia pagina) mostrata
 
         sinistra = ttk.Frame(self)
         sinistra.pack(side="left", fill="y", padx=(0, 10))
@@ -63,7 +68,8 @@ class SchedaImposizione(ttk.Frame):
         self.sp_facc.pack(side="left", padx=4)
         ttk.Label(nav, text="Vista").pack(side="left", padx=(12, 4))
         self.v_vista = tk.StringVar(value="fascicolo")
-        for valore, etichetta in (("fascicolo", "Fascicolo intero"), ("foglio", "Foglio")):
+        for valore, etichetta in (("fascicolo", "Fascicolo intero"), ("foglio", "Foglio"),
+                                ("menabo", "Menabò")):
             ttk.Radiobutton(nav, text=etichetta, value=valore, variable=self.v_vista,
                             command=self.disegna).pack(side="left", padx=2)
         self.et_facc = ttk.Label(nav, text="", foreground="#777")
@@ -117,17 +123,19 @@ class SchedaImposizione(ttk.Frame):
 
         ttk.Separator(p).pack(fill="x", pady=8)
         ttk.Label(p, text="Impaginazione (mm)", font=("", 10, "bold")).pack(anchor="w")
-        self.v_dorso = campo(p, "Margine al dorso", "15", self.disegna)
-        self.v_est = campo(p, "Margine esterno", "10", self.disegna)
-        self.v_testa = campo(p, "Margine testa", "10", self.disegna)
-        self.v_piede = campo(p, "Margine piede", "10", self.disegna)
-        self.v_scala = campo(p, "Scala", "1.0", self.disegna)
-        self.v_shing = campo(p, "Shingling (mm/foglio)", "0", self.disegna)
+        self.v_dorso = campo(p, "Margine al dorso", IMPAGINAZIONE["dorso"], self.disegna)
+        self.v_est = campo(p, "Margine esterno", IMPAGINAZIONE["est"], self.disegna)
+        self.v_testa = campo(p, "Margine testa", IMPAGINAZIONE["testa"], self.disegna)
+        self.v_piede = campo(p, "Margine piede", IMPAGINAZIONE["piede"], self.disegna)
+        self.v_scala = campo(p, "Scala", IMPAGINAZIONE["scala"], self.disegna)
+        self.v_shing = campo(p, "Shingling (mm/foglio)", IMPAGINAZIONE["shing"], self.disegna)
 
         self.v_segni = tk.BooleanVar(value=True)
         self.v_segni.trace_add("write", lambda *_: self.disegna())
         ttk.Checkbutton(p, text="Segni di piega e collazione",
                         variable=self.v_segni).pack(anchor="w", pady=4)
+        ttk.Button(p, text="Ripristina impaginazione",
+                   command=self.ripristina_impaginazione).pack(fill="x", pady=2)
 
         self.v_render = tk.BooleanVar(value=RENDERING)
         self.v_render.trace_add("write", lambda *_: self.disegna())
@@ -192,6 +200,13 @@ class SchedaImposizione(ttk.Frame):
             testo += (f" Prova della penna: {n_fascicoli} giri di filo, misura le spire "
                       f"e dividi per {n_fascicoli}.")
         return testo
+
+    def ripristina_impaginazione(self):
+        """Riporta margini, scala, shingling e segni ai valori di partenza e ricalcola."""
+        for nome, valore in IMPAGINAZIONE.items():
+            getattr(self, f"v_{nome}").set(valore)
+        self.v_segni.set(True)
+        self.ricalcola()
 
     def shingling_auto(self):
         self.v_shing.set(f"{imp.spessore_foglio_mm(intero(self.v_gram, 80)):.3f}")
@@ -333,11 +348,14 @@ class SchedaImposizione(ttk.Frame):
 
         if self.v_vista.get() == "foglio":
             self.vista_foglio(a, g, i_fasc, i_facc, W, H, mostra)
+        elif self.v_vista.get() == "menabo":
+            self.vista_menabo(W, H, mostra)
         else:
             self.vista_fascicolo(a, g, i_fasc, i_facc, W, H, mostra)
 
-        aiuto = ("clic su una facciata per ingrandirla" if self.v_vista.get() == "fascicolo"
-                 else "clic per tornare al fascicolo")
+        aiuto = {"fascicolo": "clic su una facciata per ingrandirla",
+                 "foglio": "clic per tornare al fascicolo",
+                 "menabo": "clic sulla barra per saltare"}[self.v_vista.get()]
         c.create_text(10, 6, anchor="nw", fill="#999", font=("", 8),
                       text=("Anteprima: posizione e ordine delle pagine, con il contenuto "
                             "ridotto." if mostra else
@@ -422,6 +440,114 @@ class SchedaImposizione(ttk.Frame):
         dove = f"pagine {pagine[0] + 1}-{pagine[-1] + 1} del libro" if pagine else "solo bianche"
         self.et_facc.config(text=f"fascicolo {i_fasc + 1} di {self.n_fascicoli} · {dove}")
 
+    # ------------------------------------------------------------ menabo'
+    def n_aperture(self):
+        """Doppie pagine del libro: la prima pagina da sola a destra, poi a coppie."""
+        return len(self.blocco) // 2 + 1
+
+    def pagine_apertura(self, s):
+        """(posizione a sinistra, posizione a destra) nel blocco, None dove non c'e' pagina."""
+        sx, dx = 2 * s - 1, 2 * s
+        n = len(self.blocco)
+        return (sx if 0 <= sx < n else None, dx if dx < n else None)
+
+    def fascicolo_apertura(self, s):
+        sx, dx = self.pagine_apertura(s)
+        return (dx if dx is not None else sx) // self.signature
+
+    def vista_menabo(self, W, H, mostra):
+        """Il libro come verra': l'apertura corrente a doppia pagina e, sotto, la
+        barra dei fascicoli con il punto in cui ci si trova."""
+        c = self.canvas
+        self.apertura = max(0, min(self.apertura, self.n_aperture() - 1))
+        try:
+            voluto = max(1, min(self.n_fasc.get(), self.n_fascicoli)) - 1
+        except tk.TclError:
+            return
+        if self.fascicolo_apertura(self.apertura) != voluto:
+            # e' cambiato il fascicolo dal contatore: si apre alla sua prima pagina
+            self.apertura = (voluto * self.signature + 1) // 2
+        corrente = self.fascicolo_apertura(self.apertura)
+        coppia = self.pagine_apertura(self.apertura)
+
+        barra, alto = 58, 24
+        misure = [self.misure_pagina(self.blocco[x]) for x in coppia if x is not None]
+        pw = max(m[0] for m in misure)
+        ph = max(m[1] for m in misure)
+        k = min((W - 40) / 2 / pw, (H - alto - barra - 50) / ph)
+        if k <= 0:
+            return
+        centro = W / 2
+        y0 = alto + (H - alto - barra - 40 - ph * k) / 2
+        for lato, x in zip((-1, 1), coppia):
+            if x is None:
+                continue
+            indice = self.blocco[x]
+            w, h = self.misure_pagina(indice)
+            w, h = w * k, h * k
+            x0 = centro - w if lato < 0 else centro
+            y = y0 + (ph * k - h) / 2
+            mio = x // self.signature == corrente
+            colore = C_BIANCA if indice is None else (C_PAGINA if mio else "#aaa")
+            c.create_rectangle(x0, y, x0 + w, y + h, fill="white", outline=colore,
+                               width=2 if mio else 1)
+            foto = self.foto(indice, w, h) if mostra else None
+            if foto is not None:
+                self.immagini.append(foto)
+                c.create_image(x0, y, anchor="nw", image=foto)
+                c.create_rectangle(x0, y, x0 + w, y + h, outline=colore, width=2 if mio else 1)
+            elif indice is None:
+                c.create_text(x0 + w / 2, y + h / 2, text="bianca", fill=C_BIANCA)
+            c.create_text(x0 + w / 2, y + h + 6, anchor="n", fill="#777", font=("", 8),
+                          text=f"pagina {x + 1}" + ("  (bianca)" if indice is None else ""))
+        c.create_line(centro, y0 - 4, centro, y0 + ph * k + 4, fill=C_PIEGA, dash=(6, 4))
+
+        # barra dei fascicoli: un segmento ciascuno, largo come le sue pagine
+        n = len(self.blocco)
+        bx0, bx1 = 20, W - 20
+        by0 = H - barra + 18
+        c.create_rectangle(bx0, by0, bx1, by0 + 14, fill="#eee", outline="#bbb", tags="barra")
+        for f in range(self.n_fascicoli):
+            xa = bx0 + (bx1 - bx0) * f * self.signature / n
+            xb = bx0 + (bx1 - bx0) * (f + 1) * self.signature / n
+            if f == corrente:
+                c.create_rectangle(xa, by0, xb, by0 + 14, fill=C_PIEGA, outline="", tags="barra")
+            c.create_line(xa, by0, xa, by0 + 14, fill="#bbb", tags="barra")
+        sx, dx = coppia
+        pos = dx if dx is not None else sx
+        xm = bx0 + (bx1 - bx0) * (pos + 0.5) / n
+        c.create_line(xm, by0 - 3, xm, by0 + 17, fill="#333", width=2, tags="barra")
+
+        # numero del fascicolo sopra e pagine che contiene sotto; se i segmenti sono
+        # troppo stretti per le scritte se ne salta qualcuno, tenendo il corrente
+        larghezza = (bx1 - bx0) * self.signature / n
+        cifre = len(str(n)) * 2 + 1
+        passo = max(1, int(-(-cifre * 6 // larghezza)))
+        for f in range(self.n_fascicoli):
+            if f % passo and f != corrente:
+                continue
+            if f != corrente and abs(f - corrente) < passo:
+                continue
+            xc = bx0 + (bx1 - bx0) * (f + 0.5) * self.signature / n
+            ultima = min(n, (f + 1) * self.signature)
+            peso = "bold" if f == corrente else ""
+            c.create_text(xc, by0 - 4, anchor="s", font=("", 8, peso),
+                          fill=C_PIEGA if f == corrente else "#777", text=f"F{f + 1}",
+                          tags="barra")
+            c.create_text(xc, by0 + 18, anchor="n", font=("", 7, peso), fill="#777",
+                          text=f"{f * self.signature + 1}-{ultima}", tags="barra")
+        c.tag_bind("barra", "<Button-1>", lambda e: self.salta_barra(e.x, bx0, bx1, n))
+
+        visibili = [x + 1 for x in coppia if x is not None]
+        self.et_facc.config(text=f"pagine {'-'.join(map(str, visibili))} di {n} · "
+                                 f"fascicolo {corrente + 1} di {self.n_fascicoli}")
+
+    def salta_barra(self, x, bx0, bx1, n):
+        pos = max(0, min(n - 1, int((x - bx0) / max(1, bx1 - bx0) * n)))
+        self.apertura = (pos + 1) // 2
+        self.n_fasc.set(self.fascicolo_apertura(self.apertura) + 1)
+        self.disegna()
+
     def ingrandisci(self, i_facc):
         self.n_facc.set(i_facc + 1)
         self.v_vista.set("foglio")
@@ -433,6 +559,11 @@ class SchedaImposizione(ttk.Frame):
         if not self.blocco or corrente is None:
             return
         i_fasc, i_facc = corrente
+        if self.v_vista.get() == "menabo":
+            self.apertura = max(0, min(self.apertura + verso, self.n_aperture() - 1))
+            self.n_fasc.set(self.fascicolo_apertura(self.apertura) + 1)
+            self.disegna()
+            return
         if self.v_vista.get() == "foglio":
             n = i_fasc * self.fogli * 2 + i_facc + verso
             n = max(0, min(n, self.n_fascicoli * self.fogli * 2 - 1))
