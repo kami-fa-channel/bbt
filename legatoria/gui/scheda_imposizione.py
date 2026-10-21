@@ -137,6 +137,11 @@ class SchedaImposizione(ttk.Frame):
         ttk.Button(p, text="Ripristina impaginazione",
                    command=self.ripristina_impaginazione).pack(fill="x", pady=2)
 
+        self.v_quote = tk.BooleanVar(value=True)
+        self.v_quote.trace_add("write", lambda *_: self.disegna())
+        ttk.Checkbutton(p, text="Misure in mm (vista Foglio)",
+                        variable=self.v_quote).pack(anchor="w")
+
         self.v_render = tk.BooleanVar(value=RENDERING)
         self.v_render.trace_add("write", lambda *_: self.disegna())
         cb_render = ttk.Checkbutton(p, text="Mostra il contenuto delle pagine",
@@ -590,6 +595,7 @@ class SchedaImposizione(ttk.Frame):
         fronte = i_facc % 2 == 0
         spinta = foglio * a.shingling
         piccolo = ("", 8 if grande else 7)
+        quote_pagine = []
         for lato, num in (("sx", sinistra), ("dx", destra)):
             indice = self.blocco[i_fasc * self.signature + num - 1]
             pw, ph = self.misure_pagina(indice)
@@ -600,6 +606,7 @@ class SchedaImposizione(ttk.Frame):
             by = a.margine_testa + (g.cella_h - alt) / 2
             colore = C_BIANCA if indice is None else C_PAGINA
             nome = "bianca" if indice is None else f"pag. {indice + 1}"
+            quote_pagine.append((lato, (bx, by, larg, alt)))
             c.create_rectangle(*px(bx, by), *px(bx + larg, by + alt),
                                outline=colore, width=2 if grande else 1, fill="white", tags=tag)
             foto = self.foto(indice, larg * k, alt * k) if mostra else None
@@ -625,6 +632,10 @@ class SchedaImposizione(ttk.Frame):
                     c.create_text(*px(bx + larg / 2, by + alt / 2), fill="#999", font=piccolo,
                                   text=f"\n\n({num} del fascicolo)", tags=tag)
 
+        if grande and self.v_quote.get():
+            for lato, rettangolo in quote_pagine:
+                self.quote(g, lato, *rettangolo, px)
+
         if a.segni:
             for ya, yb in ((0, 6), (g.H - 6, g.H)):
                 c.create_line(*px(g.meta, ya), *px(g.meta, yb), fill=C_SEGNO, width=2, tags=tag)
@@ -640,6 +651,33 @@ class SchedaImposizione(ttk.Frame):
                     y = 9 + (i_fasc % per_scaletta) * gradino
                     c.create_rectangle(*px(g.meta - 3, y), *px(g.meta + 3, y + 3),
                                        fill=C_SEGNO, outline="", tags=tag)
+
+    def quote(self, g, lato, bx, by, larg, alt, px):
+        """Le distanze in mm fra il contenuto di una pagina e i bordi del foglio
+        (e la piega), con una linea di quota per ciascuna."""
+        c = self.canvas
+        colore = "#1f6fb5"
+        cx, cy = bx + larg / 2, by + alt / 2
+        if lato == "sx":
+            orizzontali = ((0, bx), (bx + larg, g.meta))
+        else:
+            orizzontali = ((g.meta, bx), (bx + larg, g.W))
+        verticali = ((0, by), (by + alt, g.H))
+
+        def quota(x1, y1, x2, y2, valore):
+            if valore <= 0.005:
+                return
+            c.create_line(*px(x1, y1), *px(x2, y2), fill=colore, arrow="both",
+                          arrowshape=(5, 6, 2), tags="quote")
+            t = c.create_text(*px((x1 + x2) / 2, (y1 + y2) / 2), text=f"{valore:.1f}",
+                              fill=colore, font=("", 8), tags="quote")
+            sfondo = c.create_rectangle(*c.bbox(t), fill="white", outline="", tags="quote")
+            c.tag_lower(sfondo, t)
+
+        for a, b in orizzontali:
+            quota(a, cy, b, cy, b - a)
+        for a, b in verticali:
+            quota(cx, a, cx, b, b - a)
 
     def foto(self, indice, larghezza_px, altezza_px):
         """La pagina del PDF come PhotoImage della misura richiesta, o None se

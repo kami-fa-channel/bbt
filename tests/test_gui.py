@@ -1244,3 +1244,16 @@ def test_menabo_sfoglia_per_aperture(app, pdf_numerato, monkeypatch):
     imp.n_fasc.set(2)
     imp.disegna()
     assert imp.fascicolo_apertura(imp.apertura) == 1
+
+
+def test_vista_foglio_mostra_le_quote(app, pdf_bianco, monkeypatch):
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(16)))
+    imp = app.scheda_imposizione
+    imp.apri()
+    imp.v_vista.set("foglio")
+    imp.disegna()
+    testi = [imp.canvas.itemcget(i, "text") for i in imp.canvas.find_withtag("quote")
+             if imp.canvas.type(i) == "text"]
+    assert len(testi) >= 8
+    imp.v_quote.set(False)
+    assert not imp.canvas.find_withtag("quote")
