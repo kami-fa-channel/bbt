@@ -40,6 +40,19 @@ def test_un_pdf_per_tranche(pdf_bianco, tmp_path):
     assert sum(len(PdfReader(str(p)).pages) for p in parti) == len(PdfReader(str(uscita)).pages)
 
 
+def test_etichetta_nessuna_toglie_la_sigla_ma_non_i_segni(pdf_bianco, tmp_path):
+    from pypdf import PdfReader
+    contenuti = {}
+    for modo in ("orizzontale", "nessuna"):
+        uscita = tmp_path / f"{modo}.pdf"
+        r = legatoria("imposizione", "-i", pdf_bianco(16), "-f", 2, "--segni",
+                      "--etichetta", modo, "-o", uscita)
+        assert r.returncode == 0
+        contenuti[modo] = PdfReader(str(uscita)).pages[0].get_contents().get_data()
+    assert b"(F1.1)" in contenuti["orizzontale"]
+    assert b"(F1.1)" not in contenuti["nessuna"] and b"[2 2] 0 d" in contenuti["nessuna"]
+
+
 def test_errori_chiari_e_codice_di_uscita(pdf_bianco):
     pdf = pdf_bianco(10)
     for args, messaggio in (

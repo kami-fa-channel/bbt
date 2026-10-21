@@ -315,7 +315,15 @@ def piazza(destinazione, sorgente, cella_x, cella_y, cella_w, cella_h, scala_ext
     destinazione.merge_transformed_page(sorgente, ctm, over=True)
 
 
-def stream_segni(larghezza, altezza, etichetta, y_marca):
+ETICHETTE = ("orizzontale", "verticale", "nessuna")      # come stampare Fx.y
+
+
+def larghezza_testo(testo, corpo):
+    """Larghezza approssimata in punti di `testo` in Helvetica (cifre, F e punto)."""
+    return corpo * sum(0.611 if c == "F" else 0.278 if c == "." else 0.556 for c in testo)
+
+
+def stream_segni(larghezza, altezza, etichetta, y_marca, verticale=False):
     """Content stream con i segni di piega, la marca di collazione e l'etichetta.
 
     Tutto viene disegnato sulla linea di piega o a ridosso di essa, cioe' in
@@ -334,7 +342,16 @@ def stream_segni(larghezza, altezza, etichetta, y_marca):
         ops.append(
             f"q 0.15 g {x - 3 * MM:.2f} {y_marca:.2f} {6 * MM:.2f} {3 * MM:.2f} re f Q".encode()
         )
-    if etichetta:
+    if etichetta and verticale:
+        # ruotata di 90 gradi, sotto la tacca di piega: occupa 2 mm di larghezza
+        # invece di tutta la lunghezza del testo
+        y = altezza - 8 * MM - larghezza_testo(etichetta, 6)
+        ops += [
+            b"q BT /FSegni 6 Tf 0.5 g",
+            f"0 1 -1 0 {x + 5 * MM:.2f} {y:.2f} Tm ({etichetta}) Tj".encode(),
+            b"ET Q",
+        ]
+    elif etichetta:
         ops += [
             b"q BT /FSegni 6 Tf 0.5 g",
             f"{x + 3 * MM:.2f} {altezza - 12 * MM:.2f} Td ({etichetta}) Tj".encode(),
@@ -343,7 +360,7 @@ def stream_segni(larghezza, altezza, etichetta, y_marca):
     return b"\n".join(ops)
 
 
-def aggiungi_segni(writer, pagina, larghezza, altezza, etichetta, y_marca):
+def aggiungi_segni(writer, pagina, larghezza, altezza, etichetta, y_marca, verticale=False):
     font = DictionaryObject({
         NameObject("/Type"): NameObject("/Font"),
         NameObject("/Subtype"): NameObject("/Type1"),
@@ -355,7 +372,7 @@ def aggiungi_segni(writer, pagina, larghezza, altezza, etichetta, y_marca):
     risorse[NameObject("/Font")][NameObject("/FSegni")] = writer._add_object(font)
 
     stream = DecodedStreamObject()
-    stream.set_data(stream_segni(larghezza, altezza, etichetta, y_marca))
+    stream.set_data(stream_segni(larghezza, altezza, etichetta, y_marca, verticale))
     pagina.replace_contents(stream)
 
 
@@ -401,11 +418,12 @@ def imponi(reader, writer, blocco, args, signature, fogli, avanzamento=None):
 
             if args.segni:
                 fronte = n_facciata % 2 == 0
-                etichetta = f"F{f_idx + 1}.{foglio + 1}" if fronte else ""
+                modo = getattr(args, "etichetta", "orizzontale")
+                etichetta = f"F{f_idx + 1}.{foglio + 1}" if fronte and modo != "nessuna" else ""
                 y_marca = None
                 if fronte and foglio == 0:
                     y_marca = H - 12 * MM - (f_idx % per_scaletta) * gradino
-                aggiungi_segni(writer, pagina, W, H, etichetta, y_marca)
+                aggiungi_segni(writer, pagina, W, H, etichetta, y_marca, modo == "verticale")
 
             for lato, numero in (("sx", sinistra), ("dx", destra)):
                 indice = blocco[base + numero - 1]

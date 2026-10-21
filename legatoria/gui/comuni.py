@@ -1,7 +1,50 @@
 """Colori e piccoli aiuti condivisi dalle schede."""
 
+import json
+import os
 import tkinter as tk
 from tkinter import ttk
+
+# le impostazioni delle schede Imposizione e Copertina, nella stessa cartella
+# dell'ultimo libro di Tasselli
+IMPOSTAZIONI = os.path.join(os.path.expanduser("~"), ".tasselli_legatoria",
+                            "impostazioni.json")
+
+
+def leggi_impostazioni():
+    """Le impostazioni salvate all'ultima chiusura, o {} se mancano o sono illeggibili."""
+    try:
+        with open(IMPOSTAZIONI, encoding="utf-8") as fh:
+            dati = json.load(fh)
+        return dati if isinstance(dati, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def scrivi_impostazioni(dati):
+    os.makedirs(os.path.dirname(IMPOSTAZIONI), exist_ok=True)
+    temporaneo = IMPOSTAZIONI + ".tmp"
+    with open(temporaneo, "w", encoding="utf-8") as fh:
+        json.dump(dati, fh, indent=1, ensure_ascii=False)
+    os.replace(temporaneo, IMPOSTAZIONI)      # un file a meta' non resta mai
+
+
+def leggi_variabili(variabili):
+    """{nome: valore} delle variabili tk di `variabili` ({nome: variabile})."""
+    return {nome: var.get() for nome, var in variabili.items()}
+
+
+def applica_variabili(variabili, dati, scelte=None):
+    """Rimette in `variabili` i valori di `dati`, saltando quelli del tipo sbagliato.
+
+    `scelte` ({nome: valori ammessi}) limita i campi a un elenco fisso."""
+    for nome, var in variabili.items():
+        valore = dati.get(nome)
+        if isinstance(var, tk.BooleanVar):
+            if isinstance(valore, bool):
+                var.set(valore)
+        elif isinstance(valore, str) and valore in (scelte or {}).get(nome, [valore]):
+            var.set(valore)
 
 C_FOGLIO = "#d8d8d0"
 C_PAGINA = "#4a4a8a"

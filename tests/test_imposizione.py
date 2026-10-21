@@ -319,3 +319,11 @@ def test_senza_avanzamento_il_risultato_e_lo_stesso(pdf_numerato, tmp_path):
                      tmp_path / nome, **kw)
     a, b = (PdfReader(str(tmp_path / n)) for n in ("a.pdf", "b.pdf"))
     assert [numeri_sul_foglio(a, i) for i in range(16)] == [numeri_sul_foglio(b, i) for i in range(16)]
+
+
+def test_sigla_del_fascicolo_orizzontale_verticale_o_assente():
+    orizzontale = imp.stream_segni(600, 400, "F1.1", None)
+    verticale = imp.stream_segni(600, 400, "F1.1", None, verticale=True)
+    assert b"Td (F1.1)" in orizzontale and b"Tm (F1.1)" not in orizzontale
+    assert b"0 1 -1 0" in verticale and b"Td (F1.1)" not in verticale
+    assert b"F1.1" not in imp.stream_segni(600, 400, "", None)

@@ -22,6 +22,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from legatoria import tasselli
 from legatoria.tasselli import scan_fonts
+from legatoria.gui import comuni
 from legatoria.gui.comuni import Suggerimento
 
 
@@ -39,6 +40,7 @@ def app(tmp_path, monkeypatch):
     # niente scansione dei font in secondo piano ne' file nella cartella dell'utente
     monkeypatch.setattr(scheda_tasselli.SchedaTasselli, "_avvia_scansione", lambda self: None)
     monkeypatch.setattr(scheda_tasselli, "ULTIMO", str(tmp_path / "ultimo.json"))
+    monkeypatch.setattr(comuni, "IMPOSTAZIONI", str(tmp_path / "impostazioni.json"))
     a = App(root)
     root.update()
     yield a
@@ -1274,3 +1276,69 @@ def test_vista_foglio_mostra_le_quote(app, pdf_bianco, monkeypatch):
     assert len(testi) >= 8
     imp.v_quote.set(False)
     assert not imp.canvas.find_withtag("quote")
+
+
+def riapri(app):
+    """Chiude la finestra e ne apre un'altra, come chiudere e riavviare il programma."""
+    from legatoria.gui.app import App
+    app.chiudi()
+    root = tk.Tk()
+    nuova = App(root)
+    root.update()
+    return nuova
+
+
+def test_le_impostazioni_si_ricordano_al_riavvio(app, pdf_bianco, monkeypatch):
+    pdf = pdf_bianco(40)
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf))
+    imp, cop = app.scheda_imposizione, app.scheda_copertina
+    imp.apri()
+    imp.v_fogli.set("6")
+    imp.v_pos.set("3")
+    imp.v_dorso.set("22")
+    imp.v_etichetta.set("verticale")
+    imp.v_segni.set(False)
+    imp.v_vista.set("menabo")
+    cop.v_d.set("37")
+    cop.v_leg.set("brossura")
+    nuova = riapri(app)
+    try:
+        i, c = nuova.scheda_imposizione, nuova.scheda_copertina
+        assert (i.v_fogli.get(), i.v_dorso.get(), i.v_etichetta.get()) == ("6", "22", "verticale")
+        assert i.v_segni.get() is False and i.v_vista.get() == "menabo"
+        assert i.pdf == str(pdf) and i.pagine_orig == 40 and i.v_pos.get() == "3"
+        assert c.v_d.get() == "37" and c.v_leg.get() == "brossura"
+    finally:
+        nuova.root.destroy()
+
+
+def test_senza_il_pdf_le_bianche_si_azzerano_e_il_resto_resta(app, pdf_bianco, monkeypatch):
+    pdf = pdf_bianco(40)
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf))
+    imp = app.scheda_imposizione
+    imp.apri()
+    imp.v_pos.set("3")
+    imp.v_fogli.set("5")
+    pdf.unlink()
+    nuova = riapri(app)
+    try:
+        assert nuova.scheda_imposizione.v_pos.get() == ""
+        assert nuova.scheda_imposizione.v_fogli.get() == "5"
+        assert nuova.scheda_imposizione.reader is None
+    finally:
+        nuova.root.destroy()
+
+
+@pytest.mark.parametrize("contenuto", ["non e' json", "[1, 2]", '{"imposizione": 5, "copertina": {"altezza": 7}}',
+                                       '{"imposizione": {"fogli": 4, "carta": "zzz", "segni": "si"}}'])
+def test_impostazioni_rovinate_non_impediscono_l_avvio(app, contenuto):
+    from legatoria.gui.app import App
+    app.chiudi()                                    # salva; poi si rovina il file
+    open(comuni.IMPOSTAZIONI, "w").write(contenuto)
+    root = tk.Tk()
+    nuova = App(root)
+    try:
+        assert nuova.scheda_imposizione.v_carta.get() == "a4"
+        assert nuova.scheda_imposizione.v_segni.get() is True
+    finally:
+        nuova.root.destroy()

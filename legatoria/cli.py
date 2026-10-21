@@ -74,6 +74,10 @@ def parser_imposizione(sub):
                    help="calcola lo shingling dalla grammatura (-w)")
     g.add_argument("--segni", action="store_true",
                    help="stampa i segni di piega e il numero del fascicolo nel margine")
+    g.add_argument("--etichetta", choices=imp.ETICHETTE, default="orizzontale",
+                   help="come stampare la sigla Fx.y (fascicolo.foglio) accanto alla piega: "
+                        "'verticale' occupa meno spazio, 'nessuna' la omette; vale solo con "
+                        "--segni")
     return ap
 
 

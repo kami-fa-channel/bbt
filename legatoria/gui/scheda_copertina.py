@@ -6,7 +6,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from .. import copertina as mc
-from .comuni import C_FONDO, C_PAGINA, C_PIEGA, C_SEGNO, campo, numero, testo_scrollabile
+from .comuni import (C_FONDO, C_PAGINA, C_PIEGA, C_SEGNO, applica_variabili, campo,
+                     leggi_variabili, numero, testo_scrollabile)
 
 
 class SchedaCopertina(ttk.Frame):
@@ -81,6 +82,18 @@ class SchedaCopertina(ttk.Frame):
                    command=self.copia).pack(fill="x", pady=2)
         self.stato = ttk.Label(p, text="", foreground="#777", wraplength=210)
         self.stato.pack(anchor="w", pady=(8, 0))
+
+    def variabili(self):
+        return {"altezza": self.v_h, "larghezza": self.v_l, "dorso": self.v_d,
+                "legatura": self.v_leg, "unghia": self.v_unghia, "cartone": self.v_cartone,
+                "gola": self.v_gola, "cerniera": self.v_cerniera, "rimbocco": self.v_rimbocco,
+                "indorsato": self.v_indorsato, "cavo": self.v_cavo}
+
+    def impostazioni(self):
+        return leggi_variabili(self.variabili())
+
+    def applica(self, dati):
+        applica_variabili(self.variabili(), dati, {"legatura": ("rigida", "brossura")})
 
     def misura_cambiata(self):
         """Le misure trasferite sono solo un punto di partenza: appena l'utente

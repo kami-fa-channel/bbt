@@ -7,7 +7,9 @@ from tkinter import filedialog, messagebox, ttk
 from types import SimpleNamespace
 
 from .. import imposizione as imp
-from .comuni import C_BIANCA, C_FONDO, C_FOGLIO, C_PAGINA, C_PIEGA, C_SEGNO, Suggerimento, campo, intero, numero, testo_scrollabile
+from .comuni import (C_BIANCA, C_FONDO, C_FOGLIO, C_PAGINA, C_PIEGA, C_SEGNO, Suggerimento,
+                     applica_variabili, campo, intero, leggi_variabili, numero,
+                     testo_scrollabile)
 
 from .miniature import Miniature, motore
 
@@ -142,6 +144,15 @@ class SchedaImposizione(ttk.Frame):
         ttk.Checkbutton(p, text="Misure in mm (vista Foglio)",
                         variable=self.v_quote).pack(anchor="w")
 
+        f = ttk.Frame(p)
+        f.pack(fill="x", pady=(0, 4))
+        ttk.Label(f, text="Sigla Fx.y alla piega", width=22).pack(side="left")
+        self.v_etichetta = tk.StringVar(value="orizzontale")
+        cb_etichetta = ttk.Combobox(f, textvariable=self.v_etichetta, width=10,
+                                    state="readonly", values=imp.ETICHETTE)
+        cb_etichetta.pack(side="left")
+        cb_etichetta.bind("<<ComboboxSelected>>", lambda e: self.disegna())
+
         self.v_render = tk.BooleanVar(value=RENDERING)
         self.v_render.trace_add("write", lambda *_: self.disegna())
         cb_render = ttk.Checkbutton(p, text="Mostra il contenuto delle pagine",
@@ -193,7 +204,39 @@ class SchedaImposizione(ttk.Frame):
             scala=numero(self.v_scala, 1.0) or 1.0,
             shingling=numero(self.v_shing, 0.0),
             segni=self.v_segni.get(),
+            etichetta=self.v_etichetta.get(),
         )
+
+    def variabili(self):
+        return {"fogli": self.v_fogli, "grammatura": self.v_gram, "guardie": self.v_guardie,
+                "bianche": self.v_pos, "filo": self.v_filo, "carta": self.v_carta,
+                "tranche": self.v_tranche, "dorso": self.v_dorso, "esterno": self.v_est,
+                "testa": self.v_testa, "piede": self.v_piede, "scala": self.v_scala,
+                "shingling": self.v_shing, "segni": self.v_segni,
+                "etichetta": self.v_etichetta, "quote": self.v_quote,
+                "per_tranche": self.v_per_tranche, "rifilo": self.v_rifilo,
+                "vista": self.v_vista}
+
+    def impostazioni(self):
+        """Quel che si ricorda alla chiusura: i campi e il PDF aperto."""
+        dati = leggi_variabili(self.variabili())
+        dati["pdf"] = self.pdf
+        return dati
+
+    def applica(self, dati):
+        """Rimette i campi salvati e riapre il PDF, se c'e' ancora.
+
+        Le bianche di correzione sono posizioni di quel PDF: senza di lui non
+        hanno senso e si lasciano vuote."""
+        pdf = dati.get("pdf")
+        pdf = pdf if isinstance(pdf, str) and os.path.isfile(pdf) else None
+        if pdf is None:
+            dati = {**dati, "bianche": ""}
+        applica_variabili(self.variabili(), dati, {
+            "carta": imp.FORMATI, "etichetta": imp.ETICHETTE,
+            "vista": ("fascicolo", "foglio", "menabo")})
+        if pdf:
+            self.carica(pdf, avvisa=False)
 
     def filo(self):
         """Il filo per fascicolo indicato dall'utente, o None se il campo e' vuoto."""
@@ -214,6 +257,7 @@ class SchedaImposizione(ttk.Frame):
         for nome, valore in IMPAGINAZIONE.items():
             getattr(self, f"v_{nome}").set(valore)
         self.v_segni.set(True)
+        self.v_etichetta.set("orizzontale")
         self.ricalcola()
 
     def shingling_auto(self):
@@ -222,13 +266,16 @@ class SchedaImposizione(ttk.Frame):
     # ------------------------------------------------------------ apertura
     def apri(self):
         percorso = filedialog.askopenfilename(filetypes=[("PDF", "*.pdf")])
-        if not percorso:
-            return
+        if percorso:
+            self.carica(percorso)
+
+    def carica(self, percorso, avvisa=True):
         try:
             self.reader = imp.apri_pdf(percorso)
             self.pagine_orig = len(self.reader.pages)
         except Exception as e:
-            messagebox.showerror("Errore", f"Non riesco a leggere il PDF:\n{e}")
+            if avvisa:
+                messagebox.showerror("Errore", f"Non riesco a leggere il PDF:\n{e}")
             return
         self.pdf = percorso
         self.cache_foto.clear()
@@ -643,9 +690,12 @@ class SchedaImposizione(ttk.Frame):
             for ya, yb in ((0, 6), (g.H - 6, g.H)):
                 c.create_line(*px(g.meta, ya), *px(g.meta, yb), fill=C_SEGNO, width=2, tags=tag)
             if fronte:
-                if grande:
+                if grande and a.etichetta == "orizzontale":
                     c.create_text(*px(g.meta + 3, 12), anchor="sw", fill=C_SEGNO, font=piccolo,
                                   text=f"F{i_fasc + 1}.{foglio + 1}", tags=tag)
+                elif grande and a.etichetta == "verticale":
+                    c.create_text(*px(g.meta + 5, 8), anchor="ne", angle=90, fill=C_SEGNO,
+                                  font=piccolo, text=f"F{i_fasc + 1}.{foglio + 1}", tags=tag)
                 if foglio == 0:
                     # la stessa scaletta di imposizione.imponi
                     utile = g.H - 24

@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+from .comuni import leggi_impostazioni, scrivi_impostazioni
 from .scheda_copertina import SchedaCopertina
 from .scheda_imposizione import SchedaImposizione
 
@@ -42,10 +43,29 @@ class App:
                       ).pack(anchor="nw")
             self.note.add(segnaposto, text="  Tasselli  ")
 
+        self.ripristina_impostazioni()
         root.protocol("WM_DELETE_WINDOW", self.chiudi)
+
+    def ripristina_impostazioni(self):
+        """Rimette le impostazioni dell'ultima volta; se qualcosa non torna si parte da zero."""
+        dati = leggi_impostazioni()
+        for nome, scheda in (("imposizione", self.scheda_imposizione),
+                             ("copertina", self.scheda_copertina)):
+            try:
+                scheda.applica(dati.get(nome, {}) if isinstance(dati.get(nome), dict) else {})
+            except Exception:
+                pass
+
+    def salva_impostazioni(self):
+        try:
+            scrivi_impostazioni({"imposizione": self.scheda_imposizione.impostazioni(),
+                                 "copertina": self.scheda_copertina.impostazioni()})
+        except Exception:
+            pass
 
     def chiudi(self):
         """Salva lo stato delle schede che lo prevedono, poi chiude."""
+        self.salva_impostazioni()
         if self.scheda_tasselli is not None:
             try:
                 self.scheda_tasselli.chiudi()
