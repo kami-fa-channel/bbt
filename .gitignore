@@ -28,3 +28,6 @@ script_video.md
 
 # libreria personale delle cornici bitmap: i PNG sono tuoi, non si pubblicano
 cornici/*.png
+
+# impostazioni di un libro (scheda Tasselli: Salva libro...), personali
+libro.json
