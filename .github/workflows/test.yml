@@ -62,7 +62,7 @@ jobs:
         include:
           - { nome: Windows, os: windows-latest, python: "3.12" }
           - { nome: macOS, os: macos-latest, python: "3.12" }
-          - { nome: "Linux con Python minimo", os: ubuntu-24.04, python: "3.9" }
+          - { nome: "Linux con Python minimo", os: ubuntu-24.04, python: "3.10" }
     steps:
       - uses: actions/checkout@v7
 

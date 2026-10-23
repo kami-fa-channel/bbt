@@ -8,7 +8,7 @@ Il programma fa solo la parte informatica. Tutto il resto, dalla piegatura alla 
 
 ## Installazione
 
-Serve Python 3.9 o più recente e `tkinter`, che serve solo per la finestra e non si installa con pip:
+Serve Python 3.10 o più recente e `tkinter`, che serve solo per la finestra e non si installa con pip:
 
 | Sistema | Comando |
 | --- | --- |
@@ -49,11 +49,11 @@ sudo pacman -S tk python-pypdf python-reportlab python-fonttools python-pillow
 
 ### Sistemi supportati
 
-Il programma è sviluppato e provato solo su **Linux**, con Python 3.9, 3.12 e 3.13 (Tk 8.6 e 9.0) e con `pypdf` 5.9, 6.7 e 6.19.
+Il programma è sviluppato e provato solo su **Linux**, con Python 3.10, 3.12 e 3.13 (Tk 8.6 e 9.0) e con `pypdf` 5.9, 6.7 e 6.19.
 
 **Windows e macOS non sono supportati.** Potrebbe funzionare anche lì, e chi li usa è il benvenuto, ma non c'è modo di provarlo su quelle piattaforme e non si garantisce niente. Un problema specifico di Windows o macOS non si può verificare: se trovi un errore e sai come correggerlo, una pull request è molto più utile di una segnalazione.
 
-Su GitHub i test girano da soli a ogni modifica e a ogni pull request (`.github/workflows/test.yml`). Su Linux è il controllo che conta. Su Windows, su macOS e con Python 3.9 girano come controllo sperimentale: un fallimento lì non blocca niente e non vuol dire che quei sistemi siano supportati, è solo un'informazione in più per chi propone una correzione.
+Su GitHub i test girano da soli a ogni modifica e a ogni pull request (`.github/workflows/test.yml`). Su Linux è il controllo che conta. Su Windows, su macOS e con Python 3.10 girano come controllo sperimentale: un fallimento lì non blocca niente e non vuol dire che quei sistemi siano supportati, è solo un'informazione in più per chi propone una correzione.
 
 ## Uso rapido
 

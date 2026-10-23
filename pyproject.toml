@@ -9,7 +9,7 @@ description = "Dal PDF al libro cucito: imposizione a fascicoli, misure della co
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "pypdf>=5.0",
     "reportlab",
