@@ -71,14 +71,15 @@ Gli esempi da riga di comando sono più sotto, in [Riga di comando](#riga-di-com
 
 Tre schede, nell'ordine in cui serve il lavoro: **Imposizione**, **Copertina**, **Tasselli**. Le prime due si passano le misure con il pulsante *Porta le misure alla copertina* ([capitolo 16.6](docs/manuale.md#166-le-tre-misure-e-le-formule)).
 
-Alla chiusura la finestra salva solo lo stato della scheda Tasselli (vedi [Tasselli](#tasselli)). Imposizione e Copertina non salvano niente e alla riapertura ripartono dai valori iniziali: se hai un libro in corso, appunta i parametri usati per l'imposizione.
+Alla chiusura la finestra salva lo stato di tutte e tre le schede e alla riapertura lo ripristina. Tasselli ha il suo file (vedi [Tasselli](#tasselli)); Imposizione e Copertina condividono `impostazioni.json`, nella cartella `.tasselli_legatoria` della tua home. Per l'Imposizione si ricordano tutti i campi, la vista scelta e il PDF aperto, che viene riaperto da solo se esiste ancora; le bianche di correzione si riferiscono a quel PDF, quindi se il file non c'è più il campo si svuota e il resto resta. Se `impostazioni.json` manca o è rovinato, o contiene valori non validi, si riparte dai valori iniziali. Si ricorda un solo libro alla volta: per tenerne più di uno in lavorazione, appunta i parametri.
 
 ### Imposizione
 
-A sinistra i campi, a destra l'anteprima dei fogli imposti, in scala, con il contenuto vero delle pagine: le due pagine affiancate, la piega al centro, i margini e, se attivi, i segni. Due viste, da scegliere sopra l'anteprima:
+A sinistra i campi, a destra l'anteprima dei fogli imposti, in scala, con il contenuto vero delle pagine: le due pagine affiancate, la piega al centro, i margini e, se attivi, i segni. Tre viste, da scegliere sopra l'anteprima:
 
 * **Fascicolo intero** (quella di partenza): tutte le facciate del fascicolo, fronte e retro di ogni foglio, così si vede a colpo d'occhio quali pagine del libro finiscono su quale foglio; l'etichetta dice quali pagine del libro contiene il fascicolo. Un clic su una facciata la ingrandisce.
-* **Foglio**: una facciata sola, grande; un clic torna al fascicolo.
+* **Foglio**: una facciata sola, grande; un clic torna al fascicolo. Con la casella *Misure in mm (vista Foglio)*, attiva di default, per ogni pagina si vedono le distanze reali fra il contenuto e i bordi del foglio e la piega (in alto, in basso, esterno, verso il dorso). Sono le distanze vere, non i margini impostati: tengono conto anche di scala, centratura e shingling.
+* **Menabò**: il libro com'è, a doppia pagina nell'ordine di lettura (la prima pagina da sola a destra, poi a coppie). Le pagine del fascicolo corrente hanno il bordo evidenziato. Sotto c'è la barra dei fascicoli: un segmento ciascuno, largo come le sue pagine, con sopra il numero (`F3`) e sotto l'intervallo di pagine; una linea scura indica dove sei e un clic sulla barra salta lì. Con molti fascicoli le scritte si diradano, tenendo quella del fascicolo corrente. La rotella sfoglia una doppia pagina alla volta, il contatore *Fascicolo* porta alla prima pagina del fascicolo scelto. Mostra le pagine come sono nel PDF sorgente, senza margini, scala né shingling.
 
 I contatori *Fascicolo* e *Facciata* scorrono tutto il libro, e lo stesso fa la rotella del mouse sull'anteprima (di fascicolo in fascicolo o di facciata in facciata, secondo la vista). Le pagine si rendono in sottofondo: su un PDF pesante compaiono prima i riquadri con il numero e subito dopo il contenuto. Sotto c'è un riquadro di testo con tre blocchi:
 
@@ -101,10 +102,14 @@ Il bordo fra anteprima e riquadro si trascina per dare più spazio all'una o all
 | Scala | `--scala` | 1.0 |
 | Shingling (mm/foglio) | `--shingling` | 0 |
 | Segni di piega e collazione | `--segni` | **attivo** (da riga di comando è spento) |
+| Sigla Fx.y alla piega | `--etichetta orizzontale\|verticale\|nessuna` | orizzontale |
+| Un PDF per ogni tranche | `--per-tranche` | spento |
 | Mostra il contenuto delle pagine | — | attivo se c'è `pillow` e uno fra `pypdfium2` e `pdftoppm` |
 | Rifilo previsto (mm) | — | 3, serve solo a *Porta le misure alla copertina* |
 
-Pulsanti: *Apri PDF…*; *Shingling dalla grammatura* ([capitolo 11](docs/manuale.md#11-rifilo-del-taglio-davanti-e-shingling)); *Genera il PDF…*, che propone `<nome>_booklet.pdf`; *Porta le misure alla copertina*.
+Pulsanti: *Apri PDF…*; *Ripristina impaginazione*, che riporta margini, scala, shingling, segni e sigla ai valori iniziali (non tocca fascicolatura, formato di stampa né il file aperto); *Shingling dalla grammatura* ([capitolo 11](docs/manuale.md#11-rifilo-del-taglio-davanti-e-shingling)); *Genera il PDF…*, che propone `<nome>_booklet.pdf`; *Porta le misure alla copertina*.
+
+**Un PDF per ogni tranche.** Con la casella accesa, dopo l'imposizione compaiono accanto al file principale anche `<nome>_tranche01.pdf`, `<nome>_tranche02.pdf`, …, uno per ogni intervallo del riquadro delle tranche (che seguono *Pagine per tranche*). Così ogni file si stampa intero, senza digitare gli intervalli. Il numero ha almeno due cifre. Il PDF principale viene generato comunque, e i file di tranche con lo stesso nome vengono sovrascritti senza chiedere. Per la stampa valgono sempre le impostazioni del [capitolo 7](docs/manuale.md#7-stampa).
 
 Due differenze da tenere presenti rispetto alla riga di comando:
 
@@ -117,7 +122,7 @@ Due differenze da tenere presenti rispetto alla riga di comando:
 
 Calcola le dimensioni di tutti i pezzi della copertina a partire dalle tre misure del blocco finito, applicando le formule dei capitoli [15](docs/manuale.md#15-la-brossura) e [16](docs/manuale.md#16-la-copertina-rigida). La scheda e il sottocomando `copertina` usano la stessa funzione di calcolo, quindi danno gli stessi numeri.
 
-La scheda ha a sinistra i campi, a destra un **disegno in scala** (il rivestimento steso con piatti, gole e dorso quotati per la cassa rigida; la copertina con le quattro cordonature per la brossura) e sotto la **lista dei pezzi da tagliare**, con le fasce del rivestimento o le posizioni delle cordonature.
+La scheda ha a sinistra i campi, a destra un **disegno in scala** (il rivestimento steso con piatti, gole e dorso quotati per la cassa rigida; la copertina con le quattro cordonature per la brossura) e sotto la **lista dei pezzi da tagliare**, con le fasce del rivestimento o le posizioni delle cordonature. Nel disegno e nella sagoma PDF le **frecce a doppia punta** indicano il senso della fibra di ogni pezzo: per la rigida una nel rivestimento, una per piatto e una per il cartoncino del dorso, per la brossura una sulla copertina. Sono sempre verticali, perché la fibra va parallela al dorso ([capitolo 6](docs/manuale.md#6-carta-e-direzione-della-fibra)).
 
 Il pezzo **"Dorso, cartoncino"** non è largo quanto il dorso: i due piatti restano staccati dal dorso per fare spazio alla gola e alla cerniera, quindi il cartoncino deve coprire anche quello spazio. È largo `dorso + 2 × spessore del cartone` (più 2 mm di gioco se il dorso è cavo): con un dorso da 41 mm e cartone da 3 mm viene 49 mm, non 41. Se il numero sembra sbagliato, è questo il motivo: la formula è nella tabella del [paragrafo 16.6](docs/manuale.md#166-le-tre-misure-e-le-formule) del manuale, il perché nel [16.7](docs/manuale.md#167-il-dorso-cavo).
 
@@ -255,6 +260,8 @@ Questi sono i parametri principali; gli altri stanno nella tabella qui sotto.
 | `--shingling MM` | compensazione dello scorrimento, in mm per foglio ([capitolo 11](docs/manuale.md#11-rifilo-del-taglio-davanti-e-shingling)) | `0` |
 | `--shingling-auto` | stima lo shingling dalla grammatura | — |
 | `--segni` | stampa segni di piega, marche di collazione ed etichette | — |
+| `--etichetta MODO` | come stampare la sigla `Fx.y` accanto alla piega: `orizzontale`, `verticale` (ruotata, occupa circa 2 mm di larghezza) o `nessuna`. Vale solo con `--segni`; tacche e marca di collazione restano | `orizzontale` |
+| `--per-tranche` | scrive anche un PDF per ogni tranche (`<output>_tranche01.pdf`, …) | — |
 | `--filo MM` | spessore del filo per ogni fascicolo, per esempio misurato con la prova della penna ([capitolo 13](docs/manuale.md#13-cucitura)). Serve solo alla stima dello spessore del blocco: non cambia il file prodotto | stima 0,3–0,5 mm |
 | `--carta` | formato del foglio di stampa: `a4`, `a3`, `letter`, `legal` | `a4` |
 
@@ -266,7 +273,7 @@ Tre cose, tutte disegnate sulla linea di piega o a ridosso di essa, cioè in que
 
 * **Tacche di piega** al centro del bordo superiore e inferiore: ti danno il riferimento esatto dove piegare.
 * **Marca di collazione**: un rettangolino nero che attraversa la piega, un gradino più in basso a ogni fascicolo. Quando impili i fascicoli piegati vedi una scaletta regolare scendere lungo il dorso: se un gradino salta o si ripete, hai un fascicolo mancante o fuori ordine, e lo vedi in un colpo d'occhio invece che sfogliando.
-* **Etichetta** tipo `F12.3` in grigio chiaro accanto alla piega: fascicolo 12, terzo foglio. Sostituisce i post-it colorati del [capitolo 9](docs/manuale.md#9-logistica-post-stampa).
+* **Etichetta** tipo `F12.3` in grigio chiaro accanto alla piega: fascicolo 12, terzo foglio. Sostituisce i post-it colorati del [capitolo 9](docs/manuale.md#9-logistica-post-stampa). Se a libro rilegato le sigle si vedono (succede quando il libro si apre bene e la piega non le nasconde), con `--etichetta verticale` si stampano ruotate, in meno spazio, oppure con `--etichetta nessuna` si omettono. Senza sigla la collazione resta affidata alla scaletta di marche.
 
 #### Cosa fa il programma, passo per passo
 

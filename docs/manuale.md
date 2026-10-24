@@ -226,6 +226,8 @@ La carta ha una direzione preferenziale delle fibre. Nella legatoria la regola �
 
 Le guardie però le compri a parte: lì puoi e devi prendere carta a grana corta, o tagliarla da un formato più grande orientando la fibra nel verso giusto. È la parte dove la fibra conta di più, perché è l'unica che viene incollata a un cartone.
 
+**Sulla copertina.** Nel disegno della scheda *Copertina* e nella sagoma PDF 1:1 una freccia a doppia punta segna il senso della fibra di ogni pezzo: rivestimento, due piatti e cartoncino del dorso per la rigida; la copertina intera per la brossura. Sono sempre verticali, cioè parallele al dorso: quando tracci i pezzi sul cartone o sul foglio, la freccia deve correre nel verso della fibra.
+
 ---
 
 ## 7. Stampa
@@ -245,7 +247,7 @@ Se il margine interno risulta stretto una volta piegato, aumenta *Margine al dor
 
 ## 8. Stampa a tranches e formule
 
-Su un libro grosso, mandare tutto in stampa in una volta è rischioso: inceppamenti, surriscaldamento, e un errore di pescata che scopri 200 fogli dopo. Il programma calcola da solo la tabella degli intervalli (nella finestra sta nel riquadro sotto l'anteprima), pensata per **non spezzare mai un fascicolo a metà**. Le tranche sono di circa 50 pagine: dalla finestra il valore è fisso, da riga di comando si cambia con `-t`. Le formule sono queste.
+Su un libro grosso, mandare tutto in stampa in una volta è rischioso: inceppamenti, surriscaldamento, e un errore di pescata che scopri 200 fogli dopo. Il programma calcola da solo la tabella degli intervalli (nella finestra sta nel riquadro sotto l'anteprima), pensata per **non spezzare mai un fascicolo a metà**. Le tranche sono di circa 50 pagine: il valore si cambia nel campo *Pagine per tranche* della finestra o con `-t` da riga di comando. Se vuoi, il programma scrive anche un PDF per ogni tranche (casella *Un PDF per ogni tranche*, o `--per-tranche`): `<nome>_tranche01.pdf`, `<nome>_tranche02.pdf`, … ognuno si stampa intero, senza digitare gli intervalli, con le impostazioni del capitolo 7. Le formule sono queste.
 
 **Variabili**
 
