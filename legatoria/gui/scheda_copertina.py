@@ -150,6 +150,13 @@ class SchedaCopertina(ttk.Frame):
                 return
             r = mc.calcola(a)
             self.ultimo = (a, r)
+            # i campi lasciati vuoti mostrano in grigio il valore automatico in uso
+            # (la brossura non ha ne' cartone ne' gola)
+            rigida = a.legatura == "rigida"
+            for var, valore, serve in ((self.v_unghia, a.unghia, True),
+                                       (self.v_cartone, a.cartone, rigida),
+                                       (self.v_gola, a.gola, rigida)):
+                var.segnaposto(mc.fmt(valore) if serve else "")
             self.disegna(a, r)
             self.testo.delete("1.0", "end")
             self.testo.insert("1.0", "\n".join(mc.righe_testo(a, r)))

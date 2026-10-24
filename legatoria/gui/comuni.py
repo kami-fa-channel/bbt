@@ -128,8 +128,32 @@ def campo(parent, etichetta, valore, callback, larghezza=9):
     ttk.Label(f, text=etichetta, width=22).pack(side="left")
     var = tk.StringVar(value=valore)
     var.trace_add("write", lambda *_: callback())
-    ttk.Entry(f, textvariable=var, width=larghezza).pack(side="left")
+    voce = ttk.Entry(f, textvariable=var, width=larghezza)
+    voce.pack(side="left")
+    var.segnaposto = segnaposto_in(voce, var)
     return var
+
+
+def segnaposto_in(voce, var):
+    """Un testo grigio dentro `voce` finche' `var` e' vuota, senza metterci niente.
+
+    Restituisce la funzione che lo cambia: f("3") lo mostra, f("") lo toglie."""
+    etichetta = tk.Label(voce, foreground="#999", background="white", borderwidth=0,
+                         cursor="xterm")
+    etichetta.bind("<Button-1>", lambda e: voce.focus_set())
+
+    def aggiorna(testo=None, *_):
+        if testo is not None:
+            etichetta.testo = testo
+        testo = getattr(etichetta, "testo", "")
+        if testo and not var.get():
+            etichetta.configure(text=testo)
+            etichetta.place(x=3, rely=0.5, anchor="w")
+        else:
+            etichetta.place_forget()
+
+    var.trace_add("write", lambda *_: aggiorna())
+    return aggiorna
 
 
 def numero(var, default=0.0):

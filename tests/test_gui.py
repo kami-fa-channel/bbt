@@ -1342,3 +1342,20 @@ def test_impostazioni_rovinate_non_impediscono_l_avvio(app, contenuto):
         assert nuova.scheda_imposizione.v_segni.get() is True
     finally:
         nuova.root.destroy()
+
+
+def test_i_campi_automatici_della_copertina_mostrano_il_valore_in_grigio(app):
+    cop = app.scheda_copertina
+    cop.v_d.set("48")
+    app.root.update()
+    etichetta = lambda v: trova_campo(cop, ttk.Entry, v).winfo_children()[0]
+    assert cop.v_unghia.get() == "" and etichetta(cop.v_unghia).cget("text") == "3.5"
+    assert etichetta(cop.v_cartone).winfo_manager() == "place"
+    cop.v_cartone.set("4")                              # scritto a mano: il grigio sparisce
+    app.root.update()
+    assert etichetta(cop.v_cartone).winfo_manager() == ""
+    cop.v_cartone.set("")
+    cop.v_leg.set("brossura")                           # la brossura non ha il cartone
+    app.root.update()
+    assert etichetta(cop.v_cartone).winfo_manager() == ""
+    assert etichetta(cop.v_unghia).winfo_manager() == "place"
