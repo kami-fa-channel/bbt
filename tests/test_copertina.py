@@ -51,3 +51,19 @@ def test_la_sagoma_pdf_ha_le_dimensioni_del_rivestimento(tmp_path):
     box = PdfReader(str(tmp_path / "sagoma.pdf")).pages[0].mediabox
     assert float(box.width) * 25.4 / 72 == pytest.approx(382, abs=0.1)
     assert float(box.height) * 25.4 / 72 == pytest.approx(246, abs=0.1)
+
+
+def test_le_frecce_della_fibra_sono_verticali_dentro_ai_pezzi():
+    a = cop.opzioni(210, 145, 48)
+    r = cop.calcola(a)
+    frecce = cop.frecce_fibra(a, r)
+    tot_h, tot_l = r["rivestimento"]
+    assert len(frecce) == 4                       # rivestimento, due piatti, dorso
+    for x, alto, basso in frecce:
+        assert 0 < x < tot_l and 0 <= alto < basso <= tot_h
+    xs = [x for x, _, _ in frecce[1:]]
+    assert xs == sorted(xs)                       # piatto posteriore, dorso, piatto anteriore
+
+    brossura = cop.opzioni(210, 145, 20, "brossura")
+    una = cop.frecce_fibra(brossura, cop.calcola(brossura))
+    assert len(una) == 1

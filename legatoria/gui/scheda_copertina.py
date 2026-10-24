@@ -217,9 +217,12 @@ class SchedaCopertina(ttk.Frame):
             xd0, xd1 = r["cordonature"][1][0], r["cordonature"][2][0]
             c.create_text(x0 + (xd0 + xd1) / 2 * k, y0 + cop_h / 2 * k,
                           text="dorso", fill=C_PIEGA)
+        for mx, my0, my1 in mc.frecce_fibra(a, r):
+            c.create_line(x0 + mx * k, y0 + my0 * k, x0 + mx * k, y0 + my1 * k, fill="#444",
+                          width=2, arrow="both", arrowshape=(9, 11, 4))
         c.create_text(x0, y0 + tot_h * k + 40, anchor="nw", fill="#999", font=("", 8),
-                      text=f"{r['consiglio']}  ·  fibra parallela al dorso, "
-                           "cioè verticale in questo disegno")
+                      text=f"{r['consiglio']}  ·  le frecce mostrano il senso della fibra: "
+                           "parallela al dorso, cioè verticale in questo disegno")
 
     def copia(self):
         if not self.ultimo:

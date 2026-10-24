@@ -138,6 +138,35 @@ def calcola(a):
     return r
 
 
+def frecce_fibra(a, r):
+    """Le frecce che mostrano il senso della fibra, in mm dall'angolo in alto a
+    sinistra del disegno: lista di (x, y_alto, y_basso), tutte verticali perche'
+    la fibra va sempre parallela al dorso.
+
+    Rigida: una per il rivestimento (nel rimbocco), una per ciascun piatto e una
+    per il cartoncino del dorso.  Brossura: una, per la copertina."""
+    def verticale(x, centro, altezza):
+        lunghezza = min(0.3 * altezza, 50.0)
+        return (x, centro - lunghezza / 2, centro + lunghezza / 2)
+
+    if a.legatura == "rigida":
+        piatto_h, piatto_l = r["piatto"]
+        tot_h = r["rivestimento"][0]
+        rim, g, dorso_l = a.rimbocco, r["gola"], r["dorso_cartoncino"]
+        # sotto il centro dei pezzi, dove il disegno scrive il loro nome
+        centro = rim + 0.75 * piatto_h
+        frecce = [verticale(rim / 2, tot_h / 2, tot_h)]
+        x = rim
+        for larg, conta in ((piatto_l, True), (g, False), (dorso_l, True), (g, False),
+                            (piatto_l, True)):
+            if conta:
+                frecce.append(verticale(x + larg / 2, centro, piatto_h))
+            x += larg
+        return frecce
+    cop_h, _ = r["copertina"]
+    return [verticale(r["cordonature"][0][0] / 2, cop_h / 2, cop_h)]
+
+
 # ---------------------------------------------------------------------------
 # Testo
 # ---------------------------------------------------------------------------
@@ -200,6 +229,20 @@ def esporta_sagoma(a, r, percorso):
         for x, _ in r["cordonature"]:
             cv.line(x * MM, 0, x * MM, tot_h * MM)
         cv.setDash()
+    # le frecce della fibra, con le punte come nel disegno della finestra
+    cv.setLineWidth(1)
+    for x, y0, y1 in frecce_fibra(a, r):
+        cv.line(x * MM, (tot_h - y0) * MM, x * MM, (tot_h - y1) * MM)
+        # la base della punta sta verso l'interno: sotto la cima, sopra il fondo
+        for estremo, verso in ((y0, -1), (y1, 1)):
+            punta = (tot_h - estremo) * MM
+            base = punta + verso * 5 * MM
+            p = cv.beginPath()
+            p.moveTo(x * MM, punta)
+            p.lineTo(x * MM - 2 * MM, base)
+            p.lineTo(x * MM + 2 * MM, base)
+            p.close()
+            cv.drawPath(p, fill=1, stroke=0)
     cv.setFont("Helvetica", 6)
     cv.drawString(4 * MM, 4 * MM, "Sagoma 1:1 - fibra parallela al dorso")
     cv.showPage()
