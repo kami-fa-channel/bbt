@@ -145,7 +145,7 @@ def test_le_opzioni_citate_nei_documenti_esistono_nel_programma():
     def aiuto(*a):
         return subprocess.run([sys.executable, "-m", "legatoria", *a, "-h"], cwd=RADICE,
                               capture_output=True, text=True).stdout
-    esistenti = set(re.findall(r"--[a-z][a-z-]+", aiuto("imposizione") + aiuto("copertina") + aiuto()))
+    esistenti = set(re.findall(r"--[a-z][a-z-]+", aiuto("imposizione") + aiuto("copertina") + aiuto("volumi") + aiuto()))
     citate = set()
     for doc in DOCUMENTI:
         citate |= set(re.findall(r"`(--[a-z][a-z-]+)", leggi(doc)))

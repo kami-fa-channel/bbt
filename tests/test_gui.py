@@ -42,6 +42,7 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setattr(scheda_tasselli, "ULTIMO", str(tmp_path / "ultimo.json"))
     monkeypatch.setattr(comuni, "IMPOSTAZIONI", str(tmp_path / "impostazioni.json"))
     a = App(root)
+    a.note.select(a.scheda_imposizione)       # la prima e' Preparazione, ma quasi tutti i test provano questa
     root.update()
     yield a
     try:
@@ -50,9 +51,9 @@ def app(tmp_path, monkeypatch):
         pass                # gia' chiusa dal test stesso
 
 
-def test_tre_schede(app):
+def test_quattro_schede(app):
     nomi = [app.note.tab(i, "text").strip() for i in range(app.note.index("end"))]
-    assert nomi == ["Imposizione", "Copertina", "Tasselli"]
+    assert nomi == ["Preparazione", "Imposizione", "Copertina", "Tasselli"]
     assert app.scheda_tasselli is not None
 
 
@@ -167,7 +168,7 @@ def test_le_misure_passano_alla_copertina(app, pdf_bianco, monkeypatch):
     monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(200)))
     app.scheda_imposizione.apri()
     app.scheda_imposizione.passa_misure()
-    assert app.note.index(app.note.select()) == 1
+    assert app.note.nametowidget(app.note.select()) is app.scheda_copertina
     assert app.scheda_copertina.v_h.get() == "210"          # lato corto dell'A4
     assert "misure stimate" in app.scheda_copertina.stato.cget("text").lower()
 
@@ -387,7 +388,7 @@ def test_la_rotella_sopra_un_campo_non_ne_cambia_il_valore(app):
     """Regressione: scorrendo il pannello con il puntatore sopra "Base da incollare" la
     sporgenza saliva da sola, e con Dorso 2 attivato compariva un pezzo non richiesto."""
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     spinbox = trova_campo(tas, ttk.Spinbox, tas.vars["t2_cornice_mm"])
     tendina = trova_campo(tas, ttk.Combobox, tas.vars["t2_composizione"])
@@ -404,7 +405,7 @@ def test_la_rotella_sopra_un_campo_non_ne_cambia_il_valore(app):
 
 def test_la_rotella_sopra_un_campo_scorre_il_pannello(app):
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     # Finestra bassa, cosi' il pannello e' scorrevole qualunque siano i font del sistema
     # (con altri Tk o altri caratteri l'altezza del contenuto cambia).
     app.root.minsize(300, 200)
@@ -429,7 +430,7 @@ def test_la_rotella_sopra_un_campo_scorre_il_pannello(app):
 
 def test_la_base_da_incollare_compare_nell_anteprima_con_il_nome_giusto(app):
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
 
     def scritte():
@@ -557,7 +558,7 @@ def test_i_campi_delle_linee_estese_arrivano_alla_configurazione(app):
 
 def test_l_anteprima_disegna_le_linee_estese_solo_con_lo_stile_nuovo(app):
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     tas.vars["bordo_stile"].set("contorno")
     tas._preview()
@@ -576,7 +577,7 @@ def test_l_anteprima_mostra_anche_i_crocini(app):
     """Regressione: l'anteprima disegnava solo il contorno, e i crocini si vedevano
     soltanto nel PDF."""
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     tas.vars["bordo_stile"].set("contorno + crocini")
     tas._preview()
@@ -585,7 +586,7 @@ def test_l_anteprima_mostra_anche_i_crocini(app):
 
 def test_la_nota_dell_anteprima_dice_quando_la_distanza_e_stata_aumentata(app):
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     tas.vars["bordo_stile"].set("contorno")
     tas._preview()
@@ -633,7 +634,7 @@ def test_l_anteprima_disegna_il_rettangolo_in_blu_solo_se_il_contorno_si_stampa(
     l'anteprima disegnava comunque il rettangolo in blu, e insieme alle linee sembrava un
     cancelletto col quadretto in mezzo."""
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     tas.vars["bordo_stile"].set(stile)
     tas._preview()
@@ -645,7 +646,7 @@ def test_l_anteprima_disegna_il_rettangolo_in_blu_solo_se_il_contorno_si_stampa(
 
 def test_senza_contorno_la_nota_spiega_che_il_rettangolo_grigio_non_si_stampa(app):
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     for stile, nota in (("linee estese", True), ("crocini agli angoli", True),
                         ("contorno + linee estese", False), ("contorno", False), ("nessuno", False)):
@@ -657,7 +658,7 @@ def test_senza_contorno_la_nota_spiega_che_il_rettangolo_grigio_non_si_stampa(ap
 def test_solo_linee_estese_lascia_le_squadrette_e_toglie_il_contorno_nell_anteprima(app):
     """Il cancelletto senza il quadretto in mezzo: otto linee per pezzo, niente contorno blu."""
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.update()
     tas.vars["bordo_stile"].set("linee estese")
     tas._preview()
@@ -684,7 +685,7 @@ def _ev(x, y, state=0):
 def _tasselli(app):
     """La scheda Tasselli, visibile, con l'anteprima disegnata."""
     tas = app.scheda_tasselli
-    app.note.select(2)
+    app.note.select(app.scheda_tasselli)
     app.root.geometry("1180x760")
     app.root.update()
     app.root.update()
@@ -1359,3 +1360,61 @@ def test_i_campi_automatici_della_copertina_mostrano_il_valore_in_grigio(app):
     app.root.update()
     assert etichetta(cop.v_cartone).winfo_manager() == ""
     assert etichetta(cop.v_unghia).winfo_manager() == "place"
+
+
+def test_volumi_divide_accanto_all_originale(app, pdf_bianco, monkeypatch):
+    from pypdf import PdfReader
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(100)))
+    v = app.scheda_volumi
+    assert str(v.b_dividi.cget("state")) == "disabled"
+    v.apri()
+    v.v_tagli.set("40, 70")
+    assert v.stato.cget("text") == "3 volumi" and str(v.b_dividi.cget("state")) == "normal"
+    v.v_tagli.set("70, 40")
+    assert str(v.b_dividi.cget("state")) == "disabled" and "crescenti" in v.stato.cget("text")
+    v.v_tagli.set("40, 70")
+    v.dividi()
+    assert [len(PdfReader(str(u)).pages) for u in v.scritti] == [40, 30, 30]
+    assert all(u.parent == v.scritti[0].parent for u in v.scritti)
+
+
+def test_volumi_parti_uguali_e_apri_nell_imposizione(app, pdf_bianco, monkeypatch):
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(100)))
+    v = app.scheda_volumi
+    v.apri()
+    v.v_parti.set("4")
+    v.parti_uguali()
+    assert v.v_tagli.get() == "25, 50, 75"
+    v.dividi()
+    v.v_volume.set("bianco_vol2.pdf")
+    v.apri_in_imposizione()
+    assert app.note.nametowidget(app.note.select()) is app.scheda_imposizione
+    assert app.scheda_imposizione.pdf.endswith("bianco_vol2.pdf")
+    assert app.scheda_imposizione.pagine_orig == 25
+
+
+def test_appunti_dalla_scheda(app, pdf_bianco, monkeypatch):
+    from pypdf import PdfReader
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(pdf_bianco(10)))
+    v = app.scheda_volumi
+    v.apri()
+    assert str(v.b_dividi.cget("state")) == "disabled"
+    v.v_lato.set("a sinistra")
+    assert str(v.b_dividi.cget("state")) == "normal"
+    assert "21" in v.testo.get("1.0", "end") and "bianco_appunti.pdf" in v.testo.get("1.0", "end")
+    v.v_tipo.set("righe")
+    v.cambia_tipo()
+    assert v.v_passo.get() == "8"
+    v.v_tagli.set("4")
+    v.dividi()
+    assert [u.name for u in v.scritti] == ["bianco_vol1_appunti.pdf", "bianco_vol2_appunti.pdf"]
+    assert [len(PdfReader(str(u)).pages) for u in v.scritti] == [9, 13]
+    v.v_passo.set("0")
+    assert "passo" in v.stato.cget("text") and str(v.b_dividi.cget("state")) == "disabled"
+
+
+def test_la_scheda_preparazione_ricorda_le_scelte(app, pdf_bianco):
+    v = app.scheda_volumi
+    v.applica({"lato": "a destra", "tipo": "righe", "passo": "7", "margine": "12"})
+    assert v.impostazioni() | {"pdf": None} == {"pdf": None, "tagli": "", "lato": "a destra",
+                                                 "tipo": "righe", "passo": "7", "margine": "12"}

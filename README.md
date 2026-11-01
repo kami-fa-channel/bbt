@@ -1,6 +1,6 @@
 # BBT (Books binding tools) — dal PDF al libro cucito
 
-**BBT** prepara un PDF per farne un libro cucito a mano, in brossura o in copertina rigida: impone le pagine in fascicoli per la stampa fronte/retro, calcola le misure dei pezzi della copertina e compone i tasselli per il piatto e il dorso. È una finestra con tre schede, che seguono l'ordine del lavoro; imposizione e copertina si usano anche da riga di comando, per gli script o per una macchina senza schermo.
+**BBT** prepara un PDF per farne un libro cucito a mano, in brossura o in copertina rigida: impone le pagine in fascicoli per la stampa fronte/retro, calcola le misure dei pezzi della copertina e compone i tasselli per il piatto e il dorso. È una finestra con quattro schede, che seguono l'ordine del lavoro; volumi, imposizione e copertina si usano anche da riga di comando, per gli script o per una macchina senza schermo.
 
 ![La scheda Imposizione: anteprima del foglio imposto, riepilogo e tabella delle tranche di stampa](docs/img/finestra-imposizione.png)
 
@@ -57,6 +57,7 @@ Su GitHub i test girano da soli a ogni modifica e a ogni pull request (`.github/
 
 ## Uso rapido
 
+0. **Scheda Preparazione** (facoltativa). Se il libro è troppo grosso per un blocco solo, scrivi le pagine dopo cui tagliare; se è per studiare, aggiungi le pagine per gli appunti. *Prepara*, poi *Apri nell'Imposizione* per ciascun file.
 1. **Scheda Imposizione.** *Apri PDF…*, guarda il riepilogo (consiglia da solo i fogli per fascicolo secondo la grammatura), sfoglia l'anteprima fascicolo per fascicolo, poi *Genera il PDF…*.
 2. **Stampa solo il menabò** (vedi [Riga di comando](#riga-di-comando) e [capitolo 7](docs/manuale.md#7-stampa)), poi il resto a tranches.
 3. **Piega, cuci, colla, arrotonda.** Misura il blocco finito.
@@ -67,11 +68,21 @@ Nel passo 1, se hai misurato il tuo filo, indicalo nel campo *Filo per fascicolo
 
 Gli esempi da riga di comando sono più sotto, in [Riga di comando](#riga-di-comando).
 
-## Le tre schede
+## Le quattro schede
 
-Tre schede, nell'ordine in cui serve il lavoro: **Imposizione**, **Copertina**, **Tasselli**. Le prime due si passano le misure con il pulsante *Porta le misure alla copertina* ([capitolo 16.6](docs/manuale.md#166-le-tre-misure-e-le-formule)).
+Quattro schede, nell'ordine in cui serve il lavoro: **Preparazione**, **Imposizione**, **Copertina**, **Tasselli**. Le prime due si passano le misure con il pulsante *Porta le misure alla copertina* ([capitolo 16.6](docs/manuale.md#166-le-tre-misure-e-le-formule)).
 
-Alla chiusura la finestra salva lo stato di tutte e tre le schede e alla riapertura lo ripristina. Tasselli ha il suo file (vedi [Tasselli](#tasselli)); Imposizione e Copertina condividono `impostazioni.json`, nella cartella `.tasselli_legatoria` della tua home. Per l'Imposizione si ricordano tutti i campi, la vista scelta e il PDF aperto, che viene riaperto da solo se esiste ancora; le bianche di correzione si riferiscono a quel PDF, quindi se il file non c'è più il campo si svuota e il resto resta. Se `impostazioni.json` manca o è rovinato, o contiene valori non validi, si riparte dai valori iniziali. Si ricorda un solo libro alla volta: per tenerne più di uno in lavorazione, appunta i parametri.
+Alla chiusura la finestra salva lo stato di tutte le schede e alla riapertura lo ripristina. Tasselli ha il suo file (vedi [Tasselli](#tasselli)); Preparazione, Imposizione e Copertina condividono `impostazioni.json`, nella cartella `.tasselli_legatoria` della tua home. Per l'Imposizione si ricordano tutti i campi, la vista scelta e il PDF aperto, che viene riaperto da solo se esiste ancora; le bianche di correzione si riferiscono a quel PDF, quindi se il file non c'è più il campo si svuota e il resto resta. Se `impostazioni.json` manca o è rovinato, o contiene valori non validi, si riparte dai valori iniziali. Si ricorda un solo libro alla volta: per tenerne più di uno in lavorazione, appunta i parametri.
+
+### Preparazione
+
+Tratta il PDF prima dell'imposizione: lo divide in volumi e, se vuoi, aggiunge le pagine per gli appunti.
+
+**Volumi.** Serve per i libri troppo grossi per un blocco solo. I punti di taglio sono numeri di pagina del **PDF originale**, e ciascuno è l'ultima pagina di un volume: con `240` si ottengono le pagine 1-240 e 241-fine, con `240, 480` tre volumi, e così via. Il campo accetta virgole, punti e virgola o spazi; i numeri devono essere crescenti e compresi fra 1 e la penultima pagina. In alternativa *parti uguali* propone i tagli che dividono il libro in N volumi di pagine quasi uguali. A destra una tabella mostra, volume per volume, le pagine originali, quante sono e il nome del file.
+
+I volumi si salvano accanto all'originale come `nome_vol1.pdf`, `nome_vol2.pdf`, …; se esistono già, il programma chiede prima di sovrascriverli. Segnalibri e collegamenti interni al volume restano, quelli che puntano a un altro volume vengono scartati. **Pagine per appunti.** Con *Pagina accanto* a sinistra o a destra, ogni pagina del libro ha accanto una pagina per gli appunti, bianca, a quadretti o a righe (*Tipo*), con il *Passo* della griglia e il *Margine* dal bordo in millimetri (di partenza 5 mm per i quadretti, 8 per le righe, margine 10). Le due pagine restano affiancate a libro aperto, e per questo davanti a tutto va una pagina bianca: la prima pagina di un libro è sempre a destra. Il volume raddoppia (con *n* pagine ne escono 2*n*+1), e per questo conviene dividerlo prima. Le pagine per appunti hanno la misura della pagina a cui stanno accanto. Con gli appunti i file finiscono in `_appunti` (`nome_vol1_appunti.pdf`, oppure `nome_appunti.pdf` se non tagli niente), così non coprono i volumi senza. I segnalibri seguono le pagine. Le pagine originali che erano affiancate (nei PDF già impaginati a due) restano separate.
+
+Alla fine *Apri nell'Imposizione* carica il file scelto nella scheda successiva. La logica sta in `legatoria/volumi.py`, la scheda in `legatoria/gui/scheda_volumi.py`.
 
 ### Imposizione
 
@@ -204,12 +215,29 @@ Pulsanti: *Anteprima PDF* genera un PDF temporaneo e lo apre nel visualizzatore 
 
 ```bash
 bbt                          # apre la finestra
+bbt volumi libro.pdf 240 480   # libro_vol1.pdf, libro_vol2.pdf, libro_vol3.pdf
+bbt volumi libro.pdf 240 --appunti destra   # anche le pagine per appunti
 bbt imposizione -i libro.pdf ...
 bbt copertina ...
 bbt imposizione -h           # ogni sottocomando ha il suo aiuto
 ```
 
 Se non hai installato il pacchetto, scrivi `python bbt.py` (oppure `python -m legatoria`) al posto di `bbt`.
+
+### Sottocomando `volumi`
+
+```bash
+bbt volumi libro.pdf 240                  # volume 1: pagine 1-240, volume 2: 241-fine
+bbt volumi libro.pdf 240 480              # tre volumi
+bbt volumi libro.pdf --parti 3            # tre volumi di pagine quasi uguali
+bbt volumi libro.pdf 240 -o altra_cartella --sovrascrivi
+bbt volumi libro.pdf --appunti sinistra                  # solo gli appunti, senza dividere
+bbt volumi libro.pdf 240 --appunti destra --griglia righe --passo 7 --margine-appunti 12
+```
+
+`--appunti` (sinistra o destra) aggiunge le pagine per appunti, `--griglia` ne sceglie il tipo (`bianca`, `quadretti`, `righe`), `--passo` e `--margine-appunti` le misure in mm.
+
+Scrive `libro_vol1.pdf`, `libro_vol2.pdf`, … (con `--appunti`, `libro_vol1_appunti.pdf`, …) accanto all'originale (o in `-o`) e stampa le pagine di ciascuno. Se i file esistono già si ferma, a meno di `--sovrascrivi`.
 
 ### Sottocomando `imposizione`
 

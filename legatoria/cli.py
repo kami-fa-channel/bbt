@@ -1,6 +1,7 @@
 """Riga di comando.
 
     python -m legatoria                    apre la finestra
+    python -m legatoria volumi ...         divide un PDF in piu' volumi
     python -m legatoria imposizione ...    impone un PDF in fascicoli
     python -m legatoria copertina ...      misure dei pezzi della copertina
 
@@ -16,7 +17,67 @@ from pathlib import Path
 from . import __version__
 from . import copertina as cop
 from . import imposizione as imp
+from . import volumi as vol
 from .errori import ErroreLegatoria
+
+
+# ---------------------------------------------------------------------------
+# Volumi
+# ---------------------------------------------------------------------------
+
+def parser_volumi(sub):
+    ap = sub.add_parser(
+        "volumi",
+        help="divide un PDF in piu' volumi, prima dell'imposizione",
+        description="Divide un PDF in volumi (nome_vol1.pdf, nome_vol2.pdf, ...). "
+                    "I punti di taglio sono le ultime pagine di ogni volume, "
+                    "contate sul PDF originale: 240 dà 1-240 e 241-fine.")
+    ap.add_argument("pdf", help="PDF originale")
+    ap.add_argument("tagli", nargs="*", metavar="PAGINA",
+                    help="ultima pagina di ogni volume tranne l'ultimo")
+    ap.add_argument("--parti", type=int, metavar="N",
+                    help="invece dei punti di taglio, N volumi di pagine quasi uguali")
+    ap.add_argument("--appunti", choices=vol.LATI,
+                    help="aggiunge a ogni volume una pagina per gli appunti accanto a ogni "
+                         "pagina, da questo lato (e una bianca all'inizio); i file finiscono "
+                         "in _appunti")
+    ap.add_argument("--griglia", choices=vol.TIPI, default="quadretti",
+                    help="come sono le pagine per gli appunti")
+    ap.add_argument("--passo", type=float, metavar="MM",
+                    help="passo di quadretti o righe (default: 5 mm quadretti, 8 mm righe)")
+    ap.add_argument("--margine-appunti", type=float, default=10.0, metavar="MM",
+                    help="margine della griglia dal bordo della pagina")
+    ap.add_argument("-o", "--cartella", help="cartella di output (default: accanto all'originale)")
+    ap.add_argument("--sovrascrivi", action="store_true",
+                    help="sovrascrive i volumi che esistono gia'")
+    return ap
+
+
+def esegui_volumi(ns, ap):
+    reader = imp.apri_pdf(ns.pdf)
+    n = len(reader.pages)
+    if ns.parti is not None:
+        if ns.tagli:
+            ap.error("indica i punti di taglio oppure --parti, non tutti e due")
+        tagli = vol.tagli_uguali(n, ns.parti)
+    elif ns.tagli:
+        tagli = vol.leggi_tagli(" ".join(ns.tagli))
+    elif ns.appunti:
+        tagli = []
+    else:
+        ap.error("servono i punti di taglio, --parti oppure --appunti")
+    appunti = None
+    if ns.appunti:
+        passo = ns.passo if ns.passo is not None else vol.PASSO_DEFAULT[ns.griglia]
+        appunti = vol.Appunti(ns.appunti, ns.griglia, passo, ns.margine_appunti)
+    for (a, b), uscita in zip(vol.intervalli(n, tagli),
+                              vol.percorsi_volumi(ns.pdf, len(tagli) + 1, ns.cartella,
+                                                  appunti is not None)):
+        totale = 2 * (b - a + 1) + 1 if appunti else b - a + 1
+        print(f"{uscita.name}: pagine {a}-{b} ({b - a + 1})"
+              + (f", {totale} con gli appunti" if appunti else ""))
+    vol.dividi(ns.pdf, tagli, ns.cartella, ns.sovrascrivi, appunti)
+    print("Fatto.")
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +337,7 @@ def main(argv=None):
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = ap.add_subparsers(dest="comando", metavar="comando")
     sub.add_parser("gui", help="apre la finestra (e' quello che succede senza argomenti)")
+    ap_volumi = parser_volumi(sub)
     parser_imposizione(sub)
     ap_copertina = parser_copertina(sub)
 
@@ -283,7 +345,9 @@ def main(argv=None):
         return avvia_gui()
     ns = ap.parse_args(argv)
     try:
-        if ns.comando == "imposizione":
+        if ns.comando == "volumi":
+            esegui_volumi(ns, ap_volumi)
+        elif ns.comando == "imposizione":
             esegui_imposizione(ns)
         elif ns.comando == "copertina":
             esegui_copertina(ns, ap_copertina, senza_argomenti=len(argv) == 1)

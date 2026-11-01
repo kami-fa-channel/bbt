@@ -1,4 +1,4 @@
-"""Finestra principale: le tre schede in un'unica applicazione."""
+"""Finestra principale: le schede in un'unica applicazione."""
 
 import tkinter as tk
 from tkinter import ttk
@@ -6,6 +6,7 @@ from tkinter import ttk
 from .comuni import leggi_impostazioni, scrivi_impostazioni
 from .scheda_copertina import SchedaCopertina
 from .scheda_imposizione import SchedaImposizione
+from .scheda_volumi import SchedaVolumi
 
 # La scheda Tasselli e' facoltativa: se mancano reportlab o fonttools la finestra
 # parte lo stesso e al suo posto mostra come rimediare.
@@ -24,8 +25,10 @@ class App:
         root.minsize(1020, 680)
         self.note = ttk.Notebook(root)
         self.note.pack(fill="both", expand=True)
+        self.scheda_volumi = SchedaVolumi(self.note, self)
         self.scheda_imposizione = SchedaImposizione(self.note, self)
         self.scheda_copertina = SchedaCopertina(self.note, self)
+        self.note.add(self.scheda_volumi, text="  Preparazione  ")
         self.note.add(self.scheda_imposizione, text="  Imposizione  ")
         self.note.add(self.scheda_copertina, text="  Copertina  ")
 
@@ -49,7 +52,8 @@ class App:
     def ripristina_impostazioni(self):
         """Rimette le impostazioni dell'ultima volta; se qualcosa non torna si parte da zero."""
         dati = leggi_impostazioni()
-        for nome, scheda in (("imposizione", self.scheda_imposizione),
+        for nome, scheda in (("volumi", self.scheda_volumi),
+                             ("imposizione", self.scheda_imposizione),
                              ("copertina", self.scheda_copertina)):
             try:
                 scheda.applica(dati.get(nome, {}) if isinstance(dati.get(nome), dict) else {})
@@ -58,7 +62,8 @@ class App:
 
     def salva_impostazioni(self):
         try:
-            scrivi_impostazioni({"imposizione": self.scheda_imposizione.impostazioni(),
+            scrivi_impostazioni({"volumi": self.scheda_volumi.impostazioni(),
+                                 "imposizione": self.scheda_imposizione.impostazioni(),
                                  "copertina": self.scheda_copertina.impostazioni()})
         except Exception:
             pass

@@ -829,4 +829,4 @@ class SchedaImposizione(ttk.Frame):
         m = imp.misure_blocco_stimate(self.piano, self.v_carta.get(), numero(self.v_rifilo, 3))
         self.app.scheda_copertina.imposta(m.altezza, m.larghezza, m.dorso,
                                           (m.dorso_min, m.dorso_max))
-        self.app.note.select(1)
+        self.app.note.select(self.app.scheda_copertina)
