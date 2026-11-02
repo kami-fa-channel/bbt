@@ -45,6 +45,8 @@ def parser_volumi(sub):
                     help="come sono le pagine per gli appunti")
     ap.add_argument("--passo", type=float, metavar="MM",
                     help="passo di quadretti o righe (default: 5 mm quadretti, 8 mm righe)")
+    ap.add_argument("--spessore", type=float, default=0.1, metavar="MM",
+                    help="spessore delle linee di quadretti o righe (default: 0.1 mm)")
     ap.add_argument("--margine-appunti", type=float, default=10.0, metavar="MM",
                     help="margine della griglia dal bordo della pagina")
     ap.add_argument("-o", "--cartella", help="cartella di output (default: accanto all'originale)")
@@ -69,7 +71,7 @@ def esegui_volumi(ns, ap):
     appunti = None
     if ns.appunti:
         passo = ns.passo if ns.passo is not None else vol.PASSO_DEFAULT[ns.griglia]
-        appunti = vol.Appunti(ns.appunti, ns.griglia, passo, ns.margine_appunti)
+        appunti = vol.Appunti(ns.appunti, ns.griglia, passo, ns.margine_appunti, ns.spessore)
     for (a, b), uscita in zip(vol.intervalli(n, tagli),
                               vol.percorsi_volumi(ns.pdf, len(tagli) + 1, ns.cartella,
                                                   appunti is not None)):

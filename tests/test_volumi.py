@@ -126,7 +126,8 @@ def test_senza_tagli_ne_appunti_non_fa_niente(pdf_bianco):
 
 
 @pytest.mark.parametrize("appunti", [volumi.Appunti("su"), volumi.Appunti(tipo="a pois"),
-                                     volumi.Appunti(passo=0.2), volumi.Appunti(margine=-1)])
+                                     volumi.Appunti(passo=0.2), volumi.Appunti(margine=-1),
+                                     volumi.Appunti(spessore=0), volumi.Appunti(passo=5, spessore=3)])
 def test_appunti_non_validi(appunti, pdf_bianco):
     with pytest.raises(ErroreLegatoria):
         volumi.dividi(pdf_bianco(4), [2], appunti=appunti)
@@ -134,7 +135,7 @@ def test_appunti_non_validi(appunti, pdf_bianco):
 
 def test_appunti_da_riga_di_comando(pdf_bianco, tmp_path):
     r = legatoria("volumi", pdf_bianco(10), "5", "--appunti", "sinistra", "--griglia", "righe",
-                  "--passo", 7, "-o", tmp_path)
+                  "--passo", 7, "--spessore", 0.2, "-o", tmp_path)
     assert r.returncode == 0 and "11 con gli appunti" in r.stdout
     assert (tmp_path / "bianco_vol2_appunti.pdf").is_file()
     r = legatoria("volumi", pdf_bianco(10), "--appunti", "destra", "--sovrascrivi")

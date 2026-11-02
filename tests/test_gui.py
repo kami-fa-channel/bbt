@@ -1415,6 +1415,7 @@ def test_appunti_dalla_scheda(app, pdf_bianco, monkeypatch):
 
 def test_la_scheda_preparazione_ricorda_le_scelte(app, pdf_bianco):
     v = app.scheda_volumi
-    v.applica({"lato": "a destra", "tipo": "righe", "passo": "7", "margine": "12"})
+    v.applica({"lato": "a destra", "tipo": "righe", "passo": "7", "spessore": "0.2", "margine": "12"})
     assert v.impostazioni() | {"pdf": None} == {"pdf": None, "tagli": "", "lato": "a destra",
-                                                 "tipo": "righe", "passo": "7", "margine": "12"}
+                                                 "tipo": "righe", "passo": "7", "spessore": "0.2",
+                                                 "margine": "12"}

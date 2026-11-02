@@ -66,6 +66,7 @@ class SchedaVolumi(ttk.Frame):
         cb.pack(side="left")
         cb.bind("<<ComboboxSelected>>", self.cambia_tipo)
         self.v_passo = campo(sinistra, "Passo (mm)", "5", self.aggiorna)
+        self.v_spessore = campo(sinistra, "Spessore linee (mm)", "0.1", self.aggiorna)
         self.v_margine = campo(sinistra, "Margine (mm)", "10", self.aggiorna)
         ttk.Label(sinistra, foreground="#777", wraplength=210, justify="left",
                   text="Una pagina per appunti accanto a ogni pagina del libro, e una "
@@ -102,10 +103,11 @@ class SchedaVolumi(ttk.Frame):
     def impostazioni(self):
         return {"pdf": self.pdf, "tagli": self.v_tagli.get(), "lato": self.v_lato.get(),
                 "tipo": self.v_tipo.get(), "passo": self.v_passo.get(),
-                "margine": self.v_margine.get()}
+                "spessore": self.v_spessore.get(), "margine": self.v_margine.get()}
 
     def applica(self, dati):
         applica_variabili({"lato": self.v_lato, "tipo": self.v_tipo, "passo": self.v_passo,
+                           "spessore": self.v_spessore,
                            "margine": self.v_margine}, dati,
                           {"lato": (NESSUNA, *LATI), "tipo": vol.TIPI})
         pdf = dati.get("pdf")
@@ -158,7 +160,7 @@ class SchedaVolumi(ttk.Frame):
         if lato not in LATI:
             return None
         return vol.Appunti(lato.split()[-1], self.v_tipo.get(), numero(self.v_passo, 5.0),
-                           numero(self.v_margine, 10.0))
+                           numero(self.v_margine, 10.0), numero(self.v_spessore, 0.1))
 
     def piano(self):
         """([(prima, ultima)] dei volumi, errore): uno solo dei due e' None."""

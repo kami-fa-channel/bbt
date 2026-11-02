@@ -66,11 +66,14 @@ MM = 72 / 25.4
 
 @dataclass(frozen=True)
 class Appunti:
-    """Dove e come aggiungere le pagine per gli appunti (misure in mm)."""
+    """Dove e come aggiungere le pagine per gli appunti (misure in mm).
+
+    `passo` e' la distanza fra le righe o il lato dei quadretti, `spessore` lo spessore delle linee."""
     lato: str = "destra"
     tipo: str = "quadretti"
     passo: float = 5.0
     margine: float = 10.0
+    spessore: float = 0.1
 
     def controlla(self):
         if self.lato not in LATI:
@@ -79,6 +82,9 @@ class Appunti:
             raise ErroreLegatoria(f"il tipo di pagina deve essere uno fra {', '.join(TIPI)}.")
         if self.tipo != "bianca" and self.passo < 1:
             raise ErroreLegatoria("il passo della griglia deve essere almeno 1 mm.")
+        if self.tipo != "bianca" and not 0.01 <= self.spessore <= self.passo / 2:
+            raise ErroreLegatoria("lo spessore delle linee deve essere almeno 0,01 mm "
+                                  "e non piu' di meta' del passo.")
         if self.margine < 0:
             raise ErroreLegatoria("il margine degli appunti non puo' essere negativo.")
 
@@ -104,7 +110,7 @@ def pagina_appunti(larghezza, altezza, appunti):
     util_l, util_a = larghezza - 2 * m, altezza - 2 * m
     if appunti.tipo != "bianca" and util_l > passo and util_a > passo:
         c.setStrokeGray(0.75)
-        c.setLineWidth(0.3)
+        c.setLineWidth(appunti.spessore * MM)
         colonne, righe = int(util_l / passo), int(util_a / passo)
         x0, y0 = m + (util_l - colonne * passo) / 2, m + (util_a - righe * passo) / 2
         for j in range(righe + 1):
